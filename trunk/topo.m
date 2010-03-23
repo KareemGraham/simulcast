@@ -4,23 +4,25 @@ function [links] = topo(maxn, maxx, maxy, sigma, drawFigure);
 % maxx * maxy = area in m^2
 % sigma is std of distribution of nodes in m
 % drawFigure = 1 to plot, 0 for no plot
-Dmax = 381;
+
+Dmax = 381; %Maximum unicast distance
 
 while(1)    
     link_check = 1;
     node = randn(maxn,2);
-    node(:,1) = sigma.*node(:,1);
-    node(:,2) = sigma.*node(:,2);
+    node = sigma.*node;
     links = connectivity(node,Dmax);
+    
     d = bfs(links,1,0);
     for x=1:length(node)
        link_check = min(link_check,d(x));
-     end
+    end
     
-    if (max(max(node)) < 500 && min(min(node)) > -500 && link_check > -1)
+    %reject topologies which have unlinked nodes and nodes lying outside
+    %set boundries
+    if (max(max(node)) < maxx/2 && min(min(node)) > -maxx/2 && link_check > -1)
         break;
     end
-% rand('state',S);
 end
 
 if drawFigure >= 1
@@ -30,7 +32,6 @@ if drawFigure >= 1
     axis equal
     hold on;
     box on;
-    % grid on;
     plot(node(:, 1), node(:, 2), 'k.', 'MarkerSize', 8);
     title('Network topology');
     xlabel('X');
