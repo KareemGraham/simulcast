@@ -22,7 +22,7 @@ function [d dt pred] = bfs(A,u,target)
 % History
 % 2008-04-13: Initial coding
 
-if ~exist('target','var') || isempty(full), target=0; end
+%if ~exist('target','var') || isempty(full), target=0; end
 
 if isstruct(A), rp=A.rp; ci=A.ci; 
 else [rp ci]=sparse_to_csr(A); 
