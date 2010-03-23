@@ -34,8 +34,8 @@ if drawFigure >= 1
     box on;
     plot(node(:, 1), node(:, 2), 'k.', 'MarkerSize', 8);
     title('Network topology');
-    xlabel('X');
-    ylabel('Y');
+    xlabel('X Distance (meters)');
+    ylabel('Y Distance (meters)');
     axis([-maxx/2, maxx/2, -maxy/2, maxy/2]);
     set(gca, 'XTick', [-maxx/2; maxx/2]);
     set(gca, 'XTickLabel', [0; maxx]);
