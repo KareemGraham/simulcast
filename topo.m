@@ -1,23 +1,27 @@
-function [node] = topo(maxn, maxx, maxy, sigma, drawFigure);
+function [links] = topo(maxn, maxx, maxy, sigma, drawFigure);
 % Generate network topology
 %sigma = min(sigma,maxx/6);
 % S = rand('state');
 % rand('state',0);
 Dmax = 381;
-link_check = 0;
+
 while(1)    
+    link_check = 1;
     node = randn(maxn,2);
     %node = rand(maxn,2);
     node(:,1) = sigma.*node(:,1);
     node(:,2) = sigma.*node(:,2);
     links = connectivity(node,Dmax);
+    d = bfs(links,1);
     for x=1:length(node)
-        link_check =sum(links(:,x));
-        if(link_check == 0)
-            break;
-        end
-    end
-    if (max(max(node)) < 500 && min(min(node)) > -500 && link_check)
+%         link_check =sum(links(:,x));
+%         if(link_check == 0)
+%             break;
+%         end
+       link_check = min(link_check,d(x));
+     end
+    
+    if (max(max(node)) < 500 && min(min(node)) > -500 && link_check > -1)
         break;
     end
 % rand('state',S);
