@@ -1,4 +1,4 @@
-function [links] = topo(maxn, maxx, maxy, sigma, theta, drawFigure);
+function [links, mhops] = topo(maxn, maxx, maxy, sigma, theta, drawFigure);
 % Generate network topology
 % Input parameters
 % maxn = Number of nodes;
@@ -35,6 +35,7 @@ while(1)
        link_check = min(link_check,d(x));
     end
     
+    mhops = max_hops(links);
     %reject topologies which have unlinked nodes and nodes lying outside
     %set boundries
     if (max(max(node)) < maxx/2 && min(min(node)) > -maxx/2 && link_check > -1)
