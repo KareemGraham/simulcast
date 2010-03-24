@@ -9,7 +9,7 @@ rec = channelDecoding(fft(receive));
 
 bm = reshape((sign(real(rec))+1)/2,length(rec),1);
 am = reshape((sign(imag(rec))+1)/2,length(rec),1);
-dec = fec.bchdec(length(lc),length(lc)-100);
+dec = fec.bchdec(length(bm),length(bm)-100);
 
 
 %[bmpacker lcnerr] = detect(det, bm); 
