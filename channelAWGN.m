@@ -1,10 +1,12 @@
 function [ outsig ] = channelAWGN( insign,dist )
-%CHANNELAWGN Summary of this function goes here
-%   Detailed explanation goes here
+%CHANNELAWGN simulated n=4 exponent path loss channel with additive white
+%            guassian nosie
+
 f=2.4e9;
 c=3e8;
+n=4;
 lamda = c/f;
-volt_attn = ((lamda/(4*pi*dist))^4)^0.5;
+volt_attn = ((lamda/(4*pi*dist))^n)^0.5;
 
 %noise needs to be constants related to 0 dBW SNR
 %for BER ~1e-4@1 km => Eb/No ~8 dB

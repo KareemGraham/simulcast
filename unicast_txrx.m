@@ -21,7 +21,5 @@ for i = 1:length(err)
     [lc,mc,err(i),me] = rx(rec);
 end
 
-%[num, rat]= symerr(packet,reshape(lc,1,length(packet)))
-
 end
 
