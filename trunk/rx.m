@@ -1,17 +1,22 @@
-function [ lc_err, mc_err ] = rx( receive )
+function [ bmpacket, ampacket,lcnerr, mcnerr ] = rx( receive )
 %RX Summary of this function goes here
 %   Detailed explanation goes here
 
-det = crc.detector('Polynomial', '0x8005', 'ReflectInput', ...
-true, 'ReflectRemainder', true);
+% det = crc.detector('Polynomial', '0x8005', 'ReflectInput', ...
+% false, 'ReflectRemainder', false);
 
 rec = channelDecoding(fft(receive));
 
-lc = (sign(real(rec))+1)/2;
-mc = (sign(imag(rec))+1)/2;
+bm = reshape((sign(real(rec))+1)/2,length(rec),1);
+am = reshape((sign(imag(rec))+1)/2,length(rec),1);
+dec = fec.bchdec(length(lc),length(lc)-100);
 
-[lcpacket lc_err] = detect(det, lc); 
-[mcpacket mc_err] = detect(det, mc);
+
+%[bmpacker lcnerr] = detect(det, bm); 
+%[ampacket mcnerr] = detect(det, am);
+
+[bmpacket, lcnerr] = decode(dec,bm);
+[ampacket, mcnerr] = decode(dec,am);
 
 end
 

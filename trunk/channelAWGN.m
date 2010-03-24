@@ -4,32 +4,31 @@ function [ outsig ] = channelAWGN( insign,dist )
 f=2.4e9;
 c=3e8;
 lamda = c/f;
-noise = -203.3;
-
 volt_attn = ((lamda/(4*pi*dist))^4)^0.5;
 
 %noise needs to be constants related to 0 dBW SNR
-%for BER < 1e-6@381 m => Eb/No ~10.5 dB
+%for BER ~1e-4@1 km => Eb/No ~8 dB
 %From formula S/N  = Eb/No * R/B
 %Which in dB is S - N = Eb/No(dB) + R/B(dB)
 %
 %In 802.11 standard, Tx max at 2.4G = 100mW or 50dBm
 %For simplexity, Tx = 10 dBm for Vmax = 1V
 %
-%The path-loss at 381m is -183.329 dB, from 40*log10(lamda/(4*pi()*381))
+%The path-loss at 1km is -200.092 dB, from 40*log10(lamda/(4*pi()*1000))
 %
 %Therefore: 
-%     S=Rx Signal at 381m = 10-183.3=-173.33 dBm
+%     S=Rx Signal at 1km = 10-200.1=-190.1 dBm
 %
-%From the standard, B=11MHz, R= 1Mbps for BPSK, 2Mbps for QPSK
-%Since the max dist is 381 m for unicast traffic, R=1Mbps.
+%From the standard, B=11MHz, R= 1Mbps for BPSK => 11 Ts per symbol
+%Since the max dist is 1k m for unicast traffic, R=1Mbps.
 %
 %Thus
-%     N = -173.33 dBm -10.5 dB -10*log10(1/11)
-%       = -173.3 dBm or -203.3 dBW
+%     N = -190.1 dBm -8 dB -10*log10(1/11)
+%       = -187.7 dBm or -217.7 dBW 
+%       => SNR must be greater than 217.7 dB for S=0dBW
 
-
-outsig = awgn(volt_attn*insign,noise);
+snr = 247.7; %
+outsig = awgn(volt_attn*insign,snr,0);
 
 end
 
