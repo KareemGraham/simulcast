@@ -1,17 +1,28 @@
-function [links] = topo(maxn, maxx, maxy, sigma, drawFigure);
+function [links] = topo(maxn, maxx, maxy, sigma, theta, drawFigure);
 % Generate network topology
 % maxn = Number of nodes;
 % maxx * maxy = area in m^2
 % sigma is std of distribution of nodes in m
+% sigma = 0 for uniform distribution
+% theta offset angle
 % drawFigure = 1 to plot, 0 for no plot
-
+global Dmax;
+global n;
 Dmax = 381; %Maximum unicast distance
-
+n = 4; %Path loss exponent
 while(1)    
     link_check = 1;
-    node = randn(maxn,2);
-    node = sigma.*node;
-    links = connectivity(node,Dmax);
+    if (sigma > 0)
+        node = randn(maxn,2);
+        node = sigma.*node;
+        dist = 'Guassian';
+    else
+        node = rand(maxn,2);
+        node(:,1) = node(:,1)*maxx-maxx/2;
+        node(:,2) = node(:,2)*maxy-maxy/2;
+        dist = 'Uniform';
+    end
+    links = connectivity(node,Dmax,theta);
     
     d = bfs(links,1,0);
     for x=1:length(node)
@@ -33,7 +44,7 @@ if drawFigure >= 1
     hold on;
     box on;
     plot(node(:, 1), node(:, 2), 'k.', 'MarkerSize', 8);
-    title('Network topology');
+    title([dist ' Network topology']);
     xlabel('X Distance (meters)');
     ylabel('Y Distance (meters)');
     axis([-maxx/2, maxx/2, -maxy/2, maxy/2]);
@@ -45,6 +56,8 @@ if drawFigure >= 1
         for y=x+1:length(node)
             if(links(x,y)>0)
                 line([node(x,1) node(y,1)],[node(x,2) node(y,2)],'color','r');
+            elseif (links(x,y)<0)
+                line([node(x,1) node(y,1)],[node(x,2) node(y,2)],'color','b');
             end
         end
         text(node(x,1),node(x,2),['  ' int2str(x)])
