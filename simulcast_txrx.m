@@ -1,6 +1,15 @@
 function [ lcbm_err, lcam_err, mcbm_err, mcam_err] = simulcast_txrx( mcdist, lcdist, angle )
 %SIMULCAST_TXRX Summary of this function goes here
-%   Detailed explanation goes here
+%        traffic in the wireless network and return the error when reception 
+%        fail.
+%
+%        Inputs : 
+%                mcdist - the list of distants in meter related to more capable node
+%
+%        Output : err - return 0 when there is no error
+%                       return 1-10 when there is 1-10 bits error but
+%                       corrected.
+%                       return -1 when error is > 10 bits and fail
 
 packetSize = 923;
 

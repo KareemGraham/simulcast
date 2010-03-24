@@ -21,7 +21,7 @@ crcmcp = zeros(length(crclcp),1);
 
 if offset ~= 0
 %    crcmcp = generate(gen, encode(enc, mcpacket));
-     crcmcp = encode(enc,mcpacket);
+     crcmcp = encode(enc,reshape(mcpacket,length(mcpacket),1));
 end;
 
 %combine the more capable(cosine) and less capable packets(sine), 
