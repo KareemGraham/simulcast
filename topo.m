@@ -1,11 +1,17 @@
 function [links] = topo(maxn, maxx, maxy, sigma, theta, drawFigure);
 % Generate network topology
+% Input parameters
 % maxn = Number of nodes;
 % maxx * maxy = area in m^2
 % sigma is std of distribution of nodes in m
 % sigma = 0 for uniform distribution
 % theta offset angle
 % drawFigure = 1 to plot, 0 for no plot
+% Output
+% links = connectivity table of nodes 
+%        (-) less capable
+%        (+) more capable
+%        (0) no link
 global Dmax;
 global n;
 Dmax = 381; %Maximum unicast distance
