@@ -11,8 +11,8 @@ if (theta == 0)
         end
     end
 else
-    dl = Dmax*(cos(theta*pi/180))^(2/n)
-    dm = Dmax*(sin(theta*pi/180))^(2/n)
+    dl = Dmax*(cos(theta*pi/180))^(2/n);
+    dm = Dmax*(sin(theta*pi/180))^(2/n);
      links = zeros(length(node));
     for x = 1:length(node)    
         for y = 1:length(node)
