@@ -26,13 +26,13 @@
  % normalized Load is 1, the number of packets each node would schedule to
  % tranmit in Mnum slots should be only 1. Thus, on an average, the number
  % of packets tranmitted in each slot is 1/Mnum by each node. 
- 
+ global n;
  S      = 0;        % Network throughput
  RT     = 7;        % Maximum No. of retries for a packet before dropping
  n      = 4;        % Path Loss Exponent
  
  % Simulcast Parameters
- 
+ global Dmax;
  Theta  = 30;       % Offset angle in degrees
  Dmax   = 381;
  

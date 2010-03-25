@@ -1,7 +1,7 @@
 function [ links ] = connectivity( node, Dmax, theta )
 %connectivity - returns matrix of connectivity of nodes
-%   Detailed explanation goes here
 global n;
+
 if (theta == 0)
      links = zeros(length(node));
     for x = 1:length(node)    

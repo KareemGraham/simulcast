@@ -5,12 +5,16 @@ maxn = 10;
 maxx = 1000;
 maxy = 1000;
 sigma = 250;
-theta = 0:1:45;
+theta = 0:5:45;
 Ndeg = zeros(length(theta),1);
 Rm = zeros(length(theta),1);
 global Dmax;
+global n;
+Dmax = 381;
+n = 4;
+
 for y=1:N
-    [node, ~, ~] = topo(maxn, maxx, maxy, sigma,0, 0);
+    [node, ~, ~] = topo(maxn, maxx, maxy, sigma,0,0);
     for x=1:length(theta);
        links = connectivity(node,Dmax,theta(x));
        Ndeg(x) = Ndeg(x)+network_degree(links);
