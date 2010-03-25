@@ -13,9 +13,8 @@ function [node, links, mhops] = topo(maxn, maxx, maxy, sigma, theta, drawFigure)
 %        (+) more capable
 %        (0) no link
 global Dmax;
-global n;
-Dmax = 381; %Maximum unicast distance
-n = 4; %Path loss exponent
+
+
 while(1)    
     link_check = 1;
     if (sigma > 0)
