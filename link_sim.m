@@ -25,11 +25,11 @@ Ndeg=Ndeg./N;
 Rm=Rm./N;
 figure
 plot(theta,Ndeg)
-    title('Network Degree v. Theta');
-    xlabel('Offset Angle theta');
+    title('Network Degree v. \theta');
+    xlabel('Offset Angle \theta');
     ylabel('Network Degree');
 figure
 plot(theta,Rm)
-    title('More capable node Ratio v. Theta');
+    title('More capable node Ratio v. \theta');
     xlabel('Morecapable node Ratio');
-    xlabel('Offset Angle theta');
+    xlabel('Offset Angle \theta');
