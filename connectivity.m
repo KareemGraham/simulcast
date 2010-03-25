@@ -7,7 +7,7 @@ if (theta == 0)
     for x = 1:length(node)    
         for y = 1:length(node)
             links(x,y) = topo_dist(x,y,node);
-            links(x,y) = links(x,y)*(links(x,y) < Dmax);
+            links(x,y) = -links(x,y)*(links(x,y) < Dmax);
         end
     end
 else
@@ -17,7 +17,7 @@ else
     for x = 1:length(node)    
         for y = 1:length(node)
             links(x,y) = topo_dist(x,y,node);
-            if (links(x,y) < dl && links(x,y) > dm)
+            if (links(x,y) <= dl && links(x,y) > dm)
                 links(x,y) = -links(x,y);
             elseif (links(x,y) > dl)
                 links(x,y) = 0;
