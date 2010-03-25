@@ -14,17 +14,19 @@
  G      = 1;        % Offered load to the network (???)
  S      = 0;        % Network throughput (???)
  RT     = 7;        % Maximum No. of retries for a packet before dropping
+ n      = 4;        % Path Loss Exponent
  
  % Node parameters
  
  Mnum   = 15;       % Number of nodes on network
- Xmax   = 100;      % X dimension of area in meters
- Ymax   = 100;      % Y dimension of area in meters
+ Xmax   = 1000;      % X dimension of area in meters
+ Ymax   = 1000;      % Y dimension of area in meters
  Sig    = 0;        % STD distribution of nodes in the area
  
  % Simulcast Parameters
  
  Theta  = 30;       % Offset angle in degrees
+ Dmax   = 381;
  
  % Simulation Parameters
  
