@@ -46,6 +46,9 @@
  % give us the number of packets each node would try to transmit during the
  % simulation. 
  
+ HopsT  = zeros(Mnum,NP); % Hops table to generate randomly distributed
+ % NP no of hops that the packet would need to make to its destination
+ 
  % Packet States Enum (Not sure how many we need, just initializing)
  
  Ready  = 0;        % Packet ready to be transmitted
@@ -55,11 +58,13 @@
  Rmax   = 4;        % Packet retry limit reached, drop the packet (RT = 7)
  
  % Packet Encapsulation (Do we declare a packet by new_pkt = Pkt???)
- % @Pstate  : Packet State, see Packet States Enum @Pdes    : Packet
- % Destination, Nodes 1-Mnum @Psrc    : Packet Source, Nodes 1-Mnum @Pdata
- % : Packet data
+ % @Des : Final Destination of Packet
+ % @Tdes : Destination Node during current transit
+ % @Tsrc : Source Node during current transit
+ % @Src : Original Source of the packet
+ % @Data : Packet Data
  
- Pkt    = struct('Pstate', 0, 'Pdes', 0, 'Psrc', 0, 'Pdata', {});
+ NW_Pkt(Mnum,NP)    = struct('Des', [], 'Tdes', [], 'Tsrc', [], 'Src', [], 'State', [], 'Data', []);
  
  % Start Topology Simulation
  for idxS = 1:Ns,
@@ -67,16 +72,33 @@
      % node
      [node, links, mhops] = topo(Mnum, Xmax, Ymax, Sig, Theta, dF);
      
-     % Get the Hop Table for each Node. It is denoted as Nodei_Hops, where i
-     % is index of the node that table belongs to. Each table is 1*NP. It
-     % consists of uniform random distribution of the hops that a packet
-     % may need to make to reach its destination in range [1,mhops(i)]
+     % Get the Hop Table for each Node. It consists of uniform random 
+     % distribution of the hops that a packet may need to make to reach its 
+     % destination in range [1,mhops(i)]
      for idxNode = 1:Mnum
-         s = ['Node' int2str(idxNode) '_Hops = randi([1,mhops(idxNode)],1,NP);' ];
-         eval(s)
+         HopsT(idxNode,:) = randi([1,mhops(idxNode)],1,NP);
+         % Construct the NP packets for each node. The packets by ith node
+         % need to make hops are stored in ith row of HopsT . Function
+         % nodes_with_n_hops(links, x, n) retruns the possible destinations 
+         % which can be reached in 'n' hops from 'x'. We pick one of these
+         % destinations randomly. route(src,des,links) returns the routing
+         % table between src and des nodes. 
+         for idxNP = 1:NP
+             % Original source is same as the idxNode
+             NW_Pkt(idxNode,idxNP).Src = idxNode;
+             % During first hop, Tsrc = Src
+             NW_Pkt(idxNode,idxNP).Tsrc = NW_Pkt(idxNode,idxNP).Src; 
+             % Get the possible destinations for the given hop and select 1
+             % of them randomly
+             PossDes = nodes_with_n_hops(links, idxNode, HopsT(idxNode,NP));
+             NW_Pkt(idxNode,idxNP).Des = PossDes(randi(length(PossDes)));
+             % Get the routing table and update the next transit
+             % destination
+             RouteDes = route(idxNode, NW_Pkt(idxNode,idxNP).Des, links ); 
+             NW_Pkt(idxNode,idxNP).Tdes = RouteDes(1);            
+         end %for idxNP = 1:NP
      end % for idxNode = 1:Mnum
      
-     % Start SALOHA Time Slot Simulation
      for idxT = 1:Nt,
          % Simulate SLOHA Here: ToDo 
      end % for idxT = 1:Nt
