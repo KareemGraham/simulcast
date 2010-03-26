@@ -1,4 +1,4 @@
-function [node, links, mhops] = topo(maxn, maxx, maxy, sigma, theta, drawFigure);
+function [node, links, mhops] = topo(maxn, maxx, maxy, sigma, theta, drawFigure)
 % Generate network topology
 % Input parameters
 % maxn = Number of nodes;
