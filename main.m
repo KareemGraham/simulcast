@@ -24,7 +24,7 @@
  R      = G/Mnum;   % Attempt Rate of nodes. 
  % It is calculated as Offered Normalized Load/ No. of Nodes. So if the
  % normalized Load is 1, the number of packets each node would schedule to
- % tranmit in Mnum slots should be only 1. Thus, on an average, the number
+ % transmit in Mnum slots should be only 1. Thus, on an average, the number
  % of packets tranmitted in each slot is 1/Mnum by each node. 
  global n;
  S      = 0;        % Network throughput
@@ -68,9 +68,9 @@
      [node, links, mhops] = topo(Mnum, Xmax, Ymax, Sig, Theta, dF);
      
      % Get the Hop Table for each Node. It is denoted as Nodei_Hops, where i
-     % is number of node that table belongs to. Each table is 1*NP. It
+     % is index of the node that table belongs to. Each table is 1*NP. It
      % consists of uniform random distribution of the hops that a packet
-     % may need to make to reach its destination. 
+     % may need to make to reach its destination in range [1,mhops(i)]
      for idxNode = 1:Mnum
          s = ['Node' int2str(idxNode) '_Hops = randi([1,mhops(idxNode)],1,NP);' ];
          eval(s)
