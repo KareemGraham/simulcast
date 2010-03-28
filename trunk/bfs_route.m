@@ -50,7 +50,7 @@ while sqt-sqh>0
                 d(node)=d(v)+1; dt(node)=t; t=t+1; 
                 pred(node)=sign(val)*v;              
             %end
-            if node==0
+            if node==target
                 pred = abs(pred);
                 return; 
             end
