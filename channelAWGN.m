@@ -2,10 +2,12 @@ function [ outsig ] = channelAWGN( insign,dist )
 %CHANNELAWGN simulated n=4 exponent path loss channel with additive white
 %            guassian nosie
 
-f=2.4e9;
-c=3e8;
-n=4;
-lamda = c/f;
+f=2.4e9;                %Carrier frequency
+c=3e8;                  %Speed of light
+n=4;                    %Exponent of path loss
+lamda = c/f;            %Wavelength
+
+%Calculate the voltage attenuation for given path loss
 volt_attn = ((lamda/(4*pi*dist))^n)^0.5;
 
 %noise needs to be constants related to 0 dBW SNR
@@ -29,8 +31,8 @@ volt_attn = ((lamda/(4*pi*dist))^n)^0.5;
 %       = -187.7 dBm or -217.7 dBW 
 %       => SNR must be greater than 217.7 dB for S=0dBW
 
-snr = 247.7; %
-outsig = awgn(volt_attn*insign,snr,0);
+snr = 237.7; %Using 237.7 for SNR
+outsig = awgn(volt_attn*insign,snr,0); %
 
 end
 

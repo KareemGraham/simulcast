@@ -1,13 +1,18 @@
-function [ lcbm_err, lcam_err, mcbm_err, mcam_err] = simulcast_txrx( mcdist, lcdist, angle )
+function [ lcbm_err, lcam_err, mcbm_err, mcam_err] = simulcast_txrx( mcpacket, lcpacket, mcdist, lcdist, angle )
 %SIMULCAST_TXRX the function simulated simulcast traffic flow for uni- and
 %        multi-cast in the wireless network and return the error when  
 %        message recovery is fail.
 %
-%        Inputs : mcdist* - the list of distants in meter related to more
+%        Inputs : mcpaket - the packets list for more capable links
+%                 lcpacket - the packets list for less capable links
+%                 mcdist* - the list of distants in meter related to more
 %                          capable nodes.
 %                 lcdist* - the of distants in meter related to less capable
 %                          nodes.
 %                 angle - simulcasting angle in degree
+%                 
+%                 
+%
 %
 %        Output : err - return 0 when there is no error
 %                       return 1-10 when there is 1-10 bits error but
@@ -28,18 +33,13 @@ function [ lcbm_err, lcam_err, mcbm_err, mcam_err] = simulcast_txrx( mcdist, lcd
 %                must be less than lcdist
 %
 
-packetSize = 923;
-
-mcpacket = round(rand(1, packetSize));
-lcpacket = round(rand(1, packetSize));
-
 mcbm_err = zeros(1,length(mcdist));
 mcam_err = zeros(1,length(mcdist));
 lcbm_err = zeros(1,length(mcdist));
 lcam_err = zeros(1,length(mcdist));
 
 for i=1:length(mcdist)
-    send = tx(mcpacket,lcpacket,angle);
+    send = tx(mcpacket(i,:),lcpacket(i,:),angle);
 
     mc_rec = channelAWGN(send,mcdist(i));
     lc_rec = channelAWGN(send,lcdist(i));

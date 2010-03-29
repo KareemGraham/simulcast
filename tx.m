@@ -1,36 +1,44 @@
 function [ send ] = tx( mcpacket, lcpacket, offsetAngle)
-%TX Summary of this function goes here
-%   Detailed explanation goes here
+%TX function simulated the PHY transmission using OFDM
+%
+%        Input: mcpacket - a more capable packet in binary
+%               lcpacket - a less capable packet in binary
+%               offsetAngle - the simulcast offset angle in degree
+%
+%        Output: send - a signal mixed with mcpacket and lcpacket using
+%                       non-uniform QPSK. The signal is ready to transmit  
+%                      
 
-a = 1; %Signal Magnitude
-offset = offsetAngle*pi()/180; %convert degree to radian
+n = 2^10-1;                     %The length of the packet after FEC
+a = 1;                          %Signal Magnitude for output power of 0 dBW
+offset = offsetAngle*pi()/180;  %Convert degree to radian
 
-%gnereate a CRC objecy for 16-CRC error checking code
-%gen = crc.generator('Polynomial', '0x8005', ...
-%'ReflectInput', false, 'ReflectRemainder', false);
-
-%Assumme packet length
-enc = fec.bchenc(2^10-1,length(lcpacket));
-
+%Setup the FEC encoder for packets, the datalength is 923, and total length
+%is 1023 
+enc = fec.bchenc(n,length(lcpacket));
 lcpacket = reshape(lcpacket,length(lcpacket),1);
 
-%crclcp = generate(gen,encode(enc,lcpacket));
+%Encode the less capable packet
 crclcp = encode(enc,lcpacket);
-
 crcmcp = zeros(length(crclcp),1);
 
-if offset ~= 0
-%    crcmcp = generate(gen, encode(enc, mcpacket));
-     crcmcp = encode(enc,reshape(mcpacket,length(mcpacket),1));
+%Encode the more capable packet if the offset angle is non-zero
+if offset ~= 0     
+     crcmcp = encode(enc,reshape(mcpacket,length(mcpacket),1));     
 end;
 
-%combine the more capable(cosine) and less capable packets(sine), 
+%Apply channel coding for the two messages and convert the messages to BPSK
+crclcp = (2*channelCoding(crclcp)-1);
+crcmcp = (2*channelCoding(crcmcp)-1);
+
+
+%Combine the more capable BPSK packet(cosine) and less capable BPSK 
+%packet(sine) to make non-uniform QPSK  
 encoded_packet = a*(cos(offset)*(2*crclcp-1) + 1i*sin(offset)*(2*crcmcp-1));
 
 %Perform channel coding on the packets and converter the signal to OFDM
 %signal
-send = ifft(channelCoding(encoded_packet));
-
+send = ifft(encoded_packet);
 
 end
 
