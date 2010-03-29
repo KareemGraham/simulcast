@@ -1,22 +1,28 @@
-function [ bmpacket, ampacket,lcnerr, mcnerr ] = rx( receive )
-%RX Summary of this function goes here
-%   Detailed explanation goes here
+function [ bmpacket, ampacket,bmerr, amerr ] = rx( receive )
+%RX function simulated receiver in PHY to decode the received packet
+%
+%           Input: receive - the signal received
+%
+%           Output: bmpacket - the base message
+%                   ampacket - the additional message
+%                   bmerr - the error in the base message
+%                   amerr - the error in the additional message
 
-% det = crc.detector('Polynomial', '0x8005', 'ReflectInput', ...
-% false, 'ReflectRemainder', false);
+n_k = 100;%difference between n and k for the FEC
 
+%decode tghe received message
 rec = channelDecoding(fft(receive));
 
+%separate the I and Q channel for base message and additional message
 bm = reshape((sign(real(rec))+1)/2,length(rec),1);
 am = reshape((sign(imag(rec))+1)/2,length(rec),1);
-dec = fec.bchdec(length(bm),length(bm)-100);
 
+%generate the FEC decoder
+dec = fec.bchdec(length(bm),length(bm)-n_k);
 
-%[bmpacker lcnerr] = detect(det, bm); 
-%[ampacket mcnerr] = detect(det, am);
-
-[bmpacket, lcnerr] = decode(dec,bm);
-[ampacket, mcnerr] = decode(dec,am);
+%use the FEC to decode two received packets.
+[bmpacket, bmerr] = decode(dec,bm);
+[ampacket, amerr] = decode(dec,am);
 
 end
 
