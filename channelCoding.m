@@ -2,10 +2,8 @@ function [ out_packet ] = channelCoding( in_packet)
 %CHANNELCODING performs channel coding to match the
 %transmission rate in 802.11 stanard
 %
-%author: Sien Wu
-%
 %In 802.11, channel BW = 11MHz and Data R = 1Mbps for BPSK;
-%therefore, symbol duration is 11
+%therefore, symbol duration to bit ratio is 11
 
 symbolPeriod = 11;
 
