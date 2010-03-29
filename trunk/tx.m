@@ -27,10 +27,9 @@ if offset ~= 0
      crcmcp = encode(enc,reshape(mcpacket,length(mcpacket),1));     
 end;
 
-%Apply channel coding for the two messages and convert the messages to BPSK
-crclcp = (2*channelCoding(crclcp)-1);
-crcmcp = (2*channelCoding(crcmcp)-1);
-
+%Apply channel coding for the two messages
+crclcp = channelCoding(crclcp);
+crcmcp = channelCoding(crcmcp);
 
 %Combine the more capable BPSK packet(cosine) and less capable BPSK 
 %packet(sine) to make non-uniform QPSK  

@@ -1,7 +1,6 @@
 function [ out_packet ] = channelDecoding( in_packet)
 %CHANNELDECODING perform channel decoding (averaging symbol)
 %
-%author: Sien Wu
 %
 %In 802.11, channel BW = 11MHz and Data R = 1Mbps for BPSK;
 %therefore, symbol duration is 11
