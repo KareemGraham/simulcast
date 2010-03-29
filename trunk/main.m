@@ -99,8 +99,21 @@
          end %for idxNP = 1:NP
      end % for idxNode = 1:Mnum
      
-     for idxT = 1:Nt,
-         % Simulate SLOHA Here: ToDo 
+     % Simulate SLOHA Here: ToDo
+     collisions(Mnum)=0 % initialize collision count for each node
+     for idxT = 1:Nt
+        % Nodes that will attempt to transmit
+        for idxNode = 1:Mnum
+            % random chance that each will attempt to Tx
+            % then clean up list
+            % - force Tx if collision retry scheduled
+            % - no Tx if waiting on collision retry
+        end
+        % Evaluate collisions and schedule retransmission slot
+        % ceil(2^(num. of collisions)*rand(1)) is the binary exponential
+        % backoff delay in # of slots
+        %
+        % Expire packets that have collided > max retries
      end % for idxT = 1:Nt
      % Performance Graph code goes here
  end % for idxS = 1:Ns
