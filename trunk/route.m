@@ -1,11 +1,6 @@
 function [ route ] = route( src, dst, links )
 %route - finds route from src to dst from links
 %   Detailed explanation goes here
-[d,dt,pred] = bfs_route(links,dst,src);
-route = zeros(d(src),1);
-route(1) = src;
-for x=2:d(src)+1
-    route(x) = pred(route(x-1));
-end
+[d,route,pred] = graphshortestpath(sparse((links > 0)*1 + (links < 0) * 2), src, dst);
 end
 
