@@ -13,7 +13,9 @@ function [Nbtx] = poissonTx(attempRate)
 %               a node gets Nbtx that is 0, then it won't transmit. If a 
 %               node gets Nbtx is 1, then it can tranmit a packet within
 %               this slot. If a node gets Nbtx is 2, then it can tranmit
-%               two packets in this slot and the next slot if no collision.
+%               one packet in this slot and another one at next slot if 
+%               no collision.
+%
 %               This function should be called by each node at the begining
 %               of each slot and allow the Nbtx to be accumulcated.
 %               Therefore, each node will have an "AllowedPacketTxCount" to
