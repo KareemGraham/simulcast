@@ -14,7 +14,7 @@
  Xmax   = 1000;      % X dimension of area in meters
  Ymax   = 1000;      % Y dimension of area in meters
  Sig    = 0;        % STD distribution of nodes in the area
- Node   = struct('ID', [], 'TxMCB', [], 'TxLCB', [], 'RxBuf', [], 'iNWQ', [], 'iMCQ', [], 'iLCQ', []);
+ 
  
  % Declaring Slotted ALOHA Network Parameters
  
@@ -79,21 +79,46 @@
  % @State : State of packet
  % @Rtr : No. of Retries count for the packet
  % @Data : Packet Data
+ Pkt = struct('Des', 0, 'Tdes', 0, 'Tsrc', 0, 'Src', 0, 'Type', 0, 'State', 0, 'Rtr', 0, 'Data', zeros(1,128), 'No', 0);
+  
+ % Queue Structure Initilization
+ % @ VP: No. of valid packets in the queue. Points to the end of the queue
+ % @ Pkts: Field to hold 100 instances of Pkt type
+ Q = struct('VP', 0, 'Pkts', []);
+ Q.Pkts = Pkt;
+ Q.Pkts(NP) = Pkt;
+ 
+ % Node Structure Initilization
+ % @ ID: Node ID
+ % @ TxMCB : More Capable Link Tx Buffer
+ % @ TxLCB : Less Capable Link Tx Buffer
+ % @ RxBuf : Receive Buffer
+ % @ LCQ_Lcl : Less Capable Link Queue for Local originating packets
+ % @ MCQ_Lcl : More Capable Link Queue for Local originating packets
+ % @ LCQ_Fwd : Less Capable Link Queue for Remote originating packets
+ % @ MCQ_Fwd : More Capable Link Queue for Remote originating packets
+ 
+ Node   = struct('ID', 0, 'TxMCB', [], 'TxLCB', [], 'RxBuf', [], 'LCQ_Lcl', [], 'MCQ_Lcl', [], 'LCQ_Fwd', [],'MCQ_Fwd', []);
+ Node.TxMCB = Pkt;
+ Node.TxLCB = Pkt;
+ Node.RxBuf = Pkt;
+ Node.LCQ_Lcl = Q;
+ Node.MCQ_Lcl = Q;
+ Node.LCQ_Fwd = Q;
+ Node.MCQ_Fwd = Q;
+ Nodes = Node;
+ Nodes(Mnum) = Node;
  
  % NW Layer just generates 100 packets for each node at the start of the
  % simulation. As the simulation proceeds, the packets from this queue are
  % fetched into LL_MCQ and LL_LCQ, which is Link Layer More Capable Queues
- % and Link Layer Less Capable Queues. 
- NW_Pkt(Mnum,NP)    = struct('Des', [], 'Tdes', [], 'Tsrc', [], 'Src', [], 'Type', [], 'State', [], 'Rtr', [], 'Data', [], 'No', []);
+ % and Link Layer Less Capable Queues.
+ 
  % Link Layer More Capable Queue. Each node would maintain a queue for the
  % packets which can be forwarded on the More capable link. Further, the
  % queue would have Pt type subqueues depending upon the packet type.
  % Forwarding type packets are prefered upon the Local originating packets.
  queues = struct('LCQ',{},'MCQ',{});
- 
- LL_MCQ(Mnum,NP,Pt) = struct('Des', [], 'Tdes', [], 'Tsrc', [], 'Src', [], 'Type', [], 'State', [], 'Rtr', [], 'Data', [], 'No', []);
- % Link Layer Less Capable Queue. Each node would maintain a queue for the
- LL_LCQ(Mnum,NP,Pt) = struct('Des', [], 'Tdes', [], 'Tsrc', [], 'Src', [], 'Type', [], 'State', [], 'Rtr', [], 'Data', [], 'No', []);
  % Start Topology Simulation
  for idxS = 1:Ns,
      % Get the node distribution, link table and max. no. of hops for each
@@ -104,8 +129,6 @@
      % distribution of the hops that a packet may need to make to reach its 
      % destination in range [1,mhops(i)]
      for idxNode = 1:Mnum
-         queues(idxNode).LCQ = struct('foward',[],'local',[]);
-         queues(idxNode).MCQ = struct('foward',[],'local',[]);
          HopsT(idxNode,:) = randi([1,mhops(idxNode)],1,NP);
          Node(idxNode).ID = idxNode;
          Node(idxNode).iNWQ = 1;
