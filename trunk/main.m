@@ -40,8 +40,8 @@
  % Simulation Parameters
  
  Nt     = 1500;     % Number of time slots simulated for each topology
- Ns     = 1;        % Number of topology simulations
- dF     = 1;        % drawFigure parameter of topo function fame :)
+ Ns     = 100;        % Number of topology simulations
+ dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
  % NP is calculated as the attempt rate times number of slots. This should
  % give us the number of packets each node would try to transmit during the
@@ -84,14 +84,14 @@
  % simulation. As the simulation proceeds, the packets from this queue are
  % fetched into LL_MCQ and LL_LCQ, which is Link Layer More Capable Queues
  % and Link Layer Less Capable Queues. 
- NW_Pkt(Mnum,NP)    = struct('Des', [], 'Tdes', [], 'Tsrc', [], 'Src', [], 'Type', [], 'State', [], 'Rtr', [], 'Data', []);
+ NW_Pkt(Mnum,NP)    = struct('Des', [], 'Tdes', [], 'Tsrc', [], 'Src', [], 'Type', [], 'State', [], 'Rtr', [], 'Data', [], 'No', []);
  % Link Layer More Capable Queue. Each node would maintain a queue for the
  % packets which can be forwarded on the More capable link. Further, the
  % queue would have Pt type subqueues depending upon the packet type.
  % Forwarding type packets are prefered upon the Local originating packets.
- LL_MCQ(Mnum,NP,Pt) = struct('Des', [], 'Tdes', [], 'Tsrc', [], 'Src', [], 'Type', [], 'State', [], 'Rtr', [], 'Data', []);
+ LL_MCQ(Mnum,NP,Pt) = struct('Des', [], 'Tdes', [], 'Tsrc', [], 'Src', [], 'Type', [], 'State', [], 'Rtr', [], 'Data', [], 'No', []);
  % Link Layer Less Capable Queue. Each node would maintain a queue for the
- LL_LCQ(Mnum,NP,Pt) = struct('Des', [], 'Tdes', [], 'Tsrc', [], 'Src', [], 'Type', [], 'State', [], 'Rtr', [], 'Data', []);
+ LL_LCQ(Mnum,NP,Pt) = struct('Des', [], 'Tdes', [], 'Tsrc', [], 'Src', [], 'Type', [], 'State', [], 'Rtr', [], 'Data', [], 'No', []);
  % Start Topology Simulation
  for idxS = 1:Ns,
      % Get the node distribution, link table and max. no. of hops for each
@@ -129,7 +129,7 @@
              NW_Pkt(idxNode,idxNP).Type = Normal;
              NW_Pkt(idxNode,idxNP).State = Ready; % Ready to transmit
              NW_Pkt(idxNode,idxNP).Rtr = 0;
-             NW_Pkt(idxNode,idxNP).No = idxNp;
+             NW_Pkt(idxNode,idxNP).No = idxNP;
          end %for idxNP = 1:NP
      end % for idxNode = 1:Mnum
      
@@ -142,7 +142,7 @@
          idxNextPkt = Node(idxNode).iNWQ;
          Node(idxNode).iNWQ = idxNextPkt + 1;
          TempPkt = NW_Pkt(idxNode,idxNextPkt);
-         MoreCap = link(TempPkt.TSrc,TempPkt.Tdes);
+         MoreCap = links(TempPkt.Tsrc,TempPkt.Tdes);
          if MoreCap > 0
              LL_MCQ(idxNode,Node(idxNode).iMCQ(1,Normal),Normal) = TempPkt;
              Node(idxNode).iMCQ(1,Normal) = Node(idxNode).iMCQ(1,Normal) + 1; 
