@@ -40,7 +40,7 @@
  % Simulation Parameters
  
  Nt     = 1500;     % Number of time slots simulated for each topology
- Ns     = 100;        % Number of topology simulations
+ Ns     = 1;        % Number of topology simulations
  dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
  % NP is calculated as the attempt rate times number of slots. This should
@@ -89,6 +89,8 @@
  % packets which can be forwarded on the More capable link. Further, the
  % queue would have Pt type subqueues depending upon the packet type.
  % Forwarding type packets are prefered upon the Local originating packets.
+ queues = struct('LCQ',{},'MCQ',{});
+ 
  LL_MCQ(Mnum,NP,Pt) = struct('Des', [], 'Tdes', [], 'Tsrc', [], 'Src', [], 'Type', [], 'State', [], 'Rtr', [], 'Data', [], 'No', []);
  % Link Layer Less Capable Queue. Each node would maintain a queue for the
  LL_LCQ(Mnum,NP,Pt) = struct('Des', [], 'Tdes', [], 'Tsrc', [], 'Src', [], 'Type', [], 'State', [], 'Rtr', [], 'Data', [], 'No', []);
@@ -102,6 +104,8 @@
      % distribution of the hops that a packet may need to make to reach its 
      % destination in range [1,mhops(i)]
      for idxNode = 1:Mnum
+         queues(idxNode).LCQ = struct('foward',[],'local',[]);
+         queues(idxNode).MCQ = struct('foward',[],'local',[]);
          HopsT(idxNode,:) = randi([1,mhops(idxNode)],1,NP);
          Node(idxNode).ID = idxNode;
          Node(idxNode).iNWQ = 1;
@@ -153,7 +157,7 @@
      end
      
      % Simulate SLOHA Here: ToDo
-     collisions(Mnum) = 0 % initialize collision count for each node
+     collisions(Mnum) = 0; % initialize collision count for each node
      for idxT = 1:Nt
         % Nodes that will attempt to transmit
         for idxNode = 1:Mnum
