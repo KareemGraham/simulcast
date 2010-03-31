@@ -24,7 +24,7 @@
  % Declaring Slotted ALOHA Network Parameters
  brate  = 512e3;    % Bit rate
  Srate  = 256e3;    % Symbol rate
- Plen   = 128;      % Packet Length in bits
+ Plen   = 923;      % Packet Length in bits
  G      = 1;        % Offered Normalized Load to the Network
  R      = G/Mnum;   % Arrival Rate of packets at node
  % It is calculated as Offered Normalized Load/ No. of Nodes. So if the
@@ -83,7 +83,7 @@
  % @Rtr : No. of Retries count for the packet
  % @Data : Packet Data
  global Pkt
- Pkt = struct('Des', 0, 'Tdes', 0, 'Tsrc', 0, 'Src', 0, 'Type', 0, 'State', 0, 'Rtr', 0, 'Data', zeros(1,128), 'No', 0);
+ Pkt = struct('Des', 0, 'Tdes', 0, 'Tsrc', 0, 'Src', 0, 'Type', 0, 'State', 0, 'Rtr', 0, 'Data', zeros(1,Plen), 'No', 0);
   
  % Queue Structure Initilization
  % @ len: Length of queue. When received a new packet, store in
