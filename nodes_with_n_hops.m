@@ -3,5 +3,8 @@ function [ nodes ] = nodes_with_n_hops(links, x, n)
 %   Detailed explanation goes here
 d = bfs(links,x,0);
 nodes = find(d == n);
+if(isempty(nodes))
+    nodes = 0;
+end
 end
 
