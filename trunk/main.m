@@ -57,6 +57,8 @@
  
  % Packet States Enum (Not sure how many we need, just initializing)
  
+ global Invalid Ready Trans Colli Retry Rmax
+ 
  Invalid= 0;        % Packet is invalid
  Ready  = 1;        % Packet ready to be transmitted
  Trans  = 2;        % Packet Transmission Successful
@@ -80,6 +82,7 @@
  % @State : State of packet
  % @Rtr : No. of Retries count for the packet
  % @Data : Packet Data
+ global Pkt
  Pkt = struct('Des', 0, 'Tdes', 0, 'Tsrc', 0, 'Src', 0, 'Type', 0, 'State', 0, 'Rtr', 0, 'Data', zeros(1,128), 'No', 0);
   
  % Queue Structure Initilization
@@ -181,42 +184,43 @@
 
         for i = 1:Mnum
             TransPkt = Nodes(i).McFQ.len + Nodes(i).LcFQ.len + Nodes(i).McLQ.len + Nodes(i).LcLQ.len; % Total no. of packets in the node queues
+            
             if(TransPkt == 0)
                 continue;
             end
             % Since the packets are already sorted wrt having simulcast
             % capacity or not, we just need to check the relevant queues
             % for the non zero length.
+            % Try scheduling a MC Fwd Packet first
             if(Nodes(i).McFQ.len > 0) % More Capable Link rider fwd packet
-                if(Nodes(i).TxMCB.State == Invalid && Nodes(i).McFQ(1).state == Ready)
-                    Nodes(i).TxMCB = Nodes(i).McFQ(1); % Fetch first pkt
-                    len = Nodes(i).McFQ.len;
-                    % Shift the queue
-                    Nodes(i).McFQ(1:(len-1)) = Nodes(i).McFQ(2:len);
-                    Nodes(i).McFQ.len = len - 1; 
-                    % Delete the old packet
-                    Nodes(n).McFQ(len) = Pkt;
+                if(Nodes(i).TxMCB.State == Invalid && Nodes(i).McFQ.Pkts(1).State == Ready)
+                    [Nodes(i).TxMCB, Nodes(i).McFQ] = schd_pkt(Nodes(i).TxMCB, Nodes(i).McFQ);
                 end
-                % Since either we schduled a More Capable link rider packet
-                % or one was already present in the node TxMCB, we must try
-                % to get a packet for less capable link.
-                if(Nodes(i).LcFQ.len > 0) % Less Capable Link rider fwd packet
-                    if(Nodes(i).TxLCB.State == Invalid && Nodes(i).LcFQ(1).state == Ready)
-                        Nodes(i).TxMCB = Nodes(i).McFQ(1); % Fetch first pkt
-                        len = Nodes(i).McFQ.len;
-                        % Shift the queue
-                        Nodes(i).McFQ(1:(len-1)) = Nodes(i).McFQ(2:len);
-                        Nodes(i).McFQ.len = len - 1; 
-                        % Delete the old packet
-                        Nodes(n).McFQ(len) = Pkt;
-                    end
+            % Try scheduling a MC Local Packet next
+            elseif(Nodes(i).McLQ.len > 0) % More Capable Link rider Local packet
+                if(Nodes(i).TxMCB.State == Invalid && Nodes(i).McLQ.Pkts(1).State == Ready)
+                    [Nodes(i).TxMCB, Nodes(i).McLQ] = schd_pkt(Nodes(i).TxMCB, Nodes(i).McLQ);
                 end
-                    
             end
+            % Since either we schduled a More Capable link rider packet
+            % or one was already present in the node TxMCB, or there is no
+            % Simulcast capability that the node has. In all cases, we
+            % should try to schedule a packet in the Less capable link
+            % queue starting with forwarding queue
+             if(Nodes(i).LcFQ.len > 0) % Less Capable Link rider fwd packet
+                 if(Nodes(i).TxLCB.State == Invalid && Nodes(i).LcFQ(1).state == Ready)
+                     [Nodes(i).TxLCB, Nodes(i).LcFQ] = schd_pkt(Nodes(i).TxLCB, Nodes(i).LcFQ);
+                 end
+             elseif(Nodes(i).LcLQ.len > 0) % Less Capable Link rider Local packet
+                 if (Nodes(i).TxLCB.State == Invalid && Nodes(i).LcLQ(1).state == Ready)
+                     [Nodes(i).TxLCB, Nodes(i).LcLQ] = schd_pkt(Nodes(i).TxLCB, Nodes(i).LcLQ);                            
+                 end
+             end
+        end
+            
+            
 
-% % Sien you can assume that packets are scheduled in Nodes(i).TxMCB and
-% % Nodes(i).TxLCB. You can start writing the collision part. I need to add a
-% % few things to the previous routine. 
+% Collision part goes here.. 
         
         % Evaluate collisions and schedule retransmission slot
         % ceil(2^(num. of collisions)*rand(1)) is the binary exponential
