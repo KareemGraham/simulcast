@@ -231,6 +231,36 @@
         % Evaluate collisions and schedule retransmission slot
         % ceil(2^(num. of collisions)*rand(1)) is the binary exponential
         % backoff delay in # of slots
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Transmit any packets that did not experience collision
+        % 
+        % NOTE: not sure yet how to deal with results from simulcast_txrx
+        % or how to format "packet" input for simulcast_txrx/unicast_txrx
+        %
+        % Once I know that, 
+        
+        for i=1:Mnum
+            if Nodes(i).BoS <= idxT % backoff slot not in the future
+                if (Nodes(i).TxMCB.State == Ready && Nodes(i).TxLCB.State == Ready)
+                   % simulcast
+                   result = simulcast_txrx(Nodes(i).TxMCB, Nodes(i).TxLCB,...
+                       topo_dist(nodeXY, Nodes(i).TxMCB.Tsrc, Nodes(i).TxMCB.Tdes),...
+                       topo_dist(nodeXY, Nodes(i).TxLCB.Tsrc, Nodes(i).TxLCB.Tdes),...
+                       Theta);
+                elseif (Nodes(i).TxMCB.State == Ready) % unicast MC packet
+                    result = unicast_txrx(Nodes(i).TxMCB,...
+                        topo_dist(nodeXY, Nodes(i).TxMCB.Tsrc, Nodes(i).TxMCB.Tdes));
+                elseif (Nodes(i).TxLCB.State == Ready) % unicast LC packet
+                    result = unicast_txrx(Nodes(i).TxLCB,...
+                        topo_dist(nodeXY, Nodes(i).TxLCB.Tsrc, Nodes(i).TxLCB.Tdes));
+                else
+                    result=[]; % not in backoff and nothing to send
+                end
+                % process result and update nodes/packets
+            end
+        end
+        
      % Post Transmission Packet Processing
      % Things ToDo here -----
         % Update the Tdes fields of forwarding packets here
