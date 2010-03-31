@@ -41,7 +41,7 @@
  
  % Simulation Parameters
  Nt     = 1500;     % Number of time slots simulated for each topology
- Ns     = 10;        % Number of topology simulations
+ Ns     = 1;        % Number of topology simulations
  dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
  % NP is calculated as the attempt rate times number of slots. This should
@@ -191,32 +191,40 @@
             % Since the packets are already sorted wrt having simulcast
             % capacity or not, we just need to check the relevant queues
             % for the non zero length.
-            % Try scheduling a MC Fwd Packet first
-            if(Nodes(i).McFQ.len > 0) % More Capable Link rider fwd packet
-                if(Nodes(i).TxMCB.State == Invalid && Nodes(i).McFQ.Pkts(1).State == Ready)
-                    [Nodes(i).TxMCB, Nodes(i).McFQ] = schd_pkt(Nodes(i).TxMCB, Nodes(i).McFQ);
-                end
-            % Try scheduling a MC Local Packet next
-            elseif(Nodes(i).McLQ.len > 0) % More Capable Link rider Local packet
+            % Try scheduling a MC Local Packet first
+            if(Nodes(i).McLQ.len > 0) % More Capable Link rider fwd packet
                 if(Nodes(i).TxMCB.State == Invalid && Nodes(i).McLQ.Pkts(1).State == Ready)
                     [Nodes(i).TxMCB, Nodes(i).McLQ] = schd_pkt(Nodes(i).TxMCB, Nodes(i).McLQ);
+                end
+            % Try scheduling a MC Fwd Packet next
+            elseif(Nodes(i).McFQ.len > 0) % More Capable Link rider Local packet
+                if(Nodes(i).TxMCB.State == Invalid && Nodes(i).McFQ.Pkts(1).State == Ready)
+                    [Nodes(i).TxMCB, Nodes(i).McFQ] = schd_pkt(Nodes(i).TxMCB, Nodes(i).McFQ);
                 end
             end
             % Since either we schduled a More Capable link rider packet
             % or one was already present in the node TxMCB, or there is no
             % Simulcast capability that the node has. In all cases, we
             % should try to schedule a packet in the Less capable link
-            % queue starting with forwarding queue
-             if(Nodes(i).LcFQ.len > 0) % Less Capable Link rider fwd packet
-                 if(Nodes(i).TxLCB.State == Invalid && Nodes(i).LcFQ(1).state == Ready)
-                     [Nodes(i).TxLCB, Nodes(i).LcFQ] = schd_pkt(Nodes(i).TxLCB, Nodes(i).LcFQ);
+            % queue starting with local queue
+             if(Nodes(i).LcLQ.len > 0) % Less Capable Link rider Local packet
+                 if(Nodes(i).TxLCB.State == Invalid && Nodes(i).LcLQ.Pkts(1).State == Ready)
+                     [Nodes(i).TxLCB, Nodes(i).LcLQ] = schd_pkt(Nodes(i).TxLCB, Nodes(i).LcLQ);
                  end
-             elseif(Nodes(i).LcLQ.len > 0) % Less Capable Link rider Local packet
-                 if (Nodes(i).TxLCB.State == Invalid && Nodes(i).LcLQ(1).state == Ready)
-                     [Nodes(i).TxLCB, Nodes(i).LcLQ] = schd_pkt(Nodes(i).TxLCB, Nodes(i).LcLQ);                            
+             elseif(Nodes(i).LcFQ.len > 0) % Less Capable Link rider Forward packet
+                 if (Nodes(i).TxLCB.State == Invalid && Nodes(i).LcFQ.Pkts(1).State == Ready)
+                     [Nodes(i).TxLCB, Nodes(i).LcFQ] = schd_pkt(Nodes(i).TxLCB, Nodes(i).LcFQ);
                  end
              end
         end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % From this point on, for all the further purposes, one can assume
+        % that the packets are scheduled in TxMCB and TxLCB of the Nodes.
+        % The further routines must check Tx.MCB.State = Ready and
+        % TxLCB.State = Ready to make sure that the packets in these buffers
+        % valid for transmission. There are few changes that we may to do
+        % in the packet scheduling. But it would not affect the processing
+        % that we need to do from here on. 
 
 % Collision part goes here.. 
         
