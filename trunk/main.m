@@ -288,28 +288,71 @@
             if Nodes(i).BoS <= idxT % backoff slot not in the future
                 if (Nodes(i).TxMCB.State == Ready && Nodes(i).TxLCB.State == Ready)
                    % simulcast
-                   result = simulcast_txrx(Nodes(i).TxMCB.Data, Nodes(i).TxLCB.Data,...
+                   % junk is a variable to hold results I don't care about,
+                   % if everyone had 2009b we could use ~ to ignore
+                   % specific return values
+                   [junk,junk,junk,junk,lcbm_err,junk,mcbm_err,mcam_err] =...
+                       simulcast_txrx(Nodes(i).TxMCB.Data, Nodes(i).TxLCB.Data,...
                        topo_dist(nodeXY, Nodes(i).TxMCB.Tsrc, Nodes(i).TxMCB.Tdes),...
                        topo_dist(nodeXY, Nodes(i).TxLCB.Tsrc, Nodes(i).TxLCB.Tdes),...
                        Theta);
+                   if (Nodes(i).TxMCB.Tdes == Nodes(i).TxLCB.Tdes) % both packets to MC dest
+                       if (mcbm_err == 0) % base packet to MC node received
+                           mypkt = Nodes(i).TxLCB;
+                           mypkt.Tsrc = mypkt.Tdes;
+                           mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
+                           % now how do we "assign" this packet to the
+                           % right Tx queue on the receiving node?
+                       else
+                           % delete packet
+                       end
+                   end
+                   if (mcam_err == 0) % additional packet received
+                       mypkt = Nodes(i).TxMCB;
+                       mypkt.Tsrc = mypkt.Tdes;
+                       mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
+                       % add packet to receiving node's queue
+                   else
+                       % delete packet
+                   end
+                   if (lcbm_err == 0) % base packet to LC node received
+                       mypkt = Nodes(i).TxLCB;
+                       mypkt.Tsrc = mypkt.Tdes;
+                       mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
+                       % add packet to receiving node's queue
+                   else
+                       % delete packet
+                   end
                 elseif (Nodes(i).TxMCB.State == Ready) % unicast MC packet
-                    result = unicast_txrx(Nodes(i).TxMCB.Data,...
+                    [junk,uni_err] = unicast_txrx(Nodes(i).TxMCB.Data,...
                         topo_dist(nodeXY, Nodes(i).TxMCB.Tsrc, Nodes(i).TxMCB.Tdes));
+                    if (uni_err == 0) % unicast packet received
+                        mypkt = Nodes(i).TxMCB;
+                        mypkt.Tsrc = mypkt.Tdes;
+                        mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
+                        % add packet to receiving queue
+                    else
+                        % delete packet
+                    end
                 elseif (Nodes(i).TxLCB.State == Ready) % unicast LC packet
-                    result = unicast_txrx(Nodes(i).TxLCB.Data,...
+                    [junk,uni_err] = unicast_txrx(Nodes(i).TxLCB.Data,...
                         topo_dist(nodeXY, Nodes(i).TxLCB.Tsrc, Nodes(i).TxLCB.Tdes));
+                    if (uni_err == 0) % unicast packet received
+                        mypkt = Nodes(i).TxLCB;
+                        mypkt.Tsrc = mypkt.Tdes;
+                        mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
+                        % add packet to receiving queue
+                    else
+                        % delete packet
+                    end
                 else
-                    result=[]; % not in backoff and nothing to send
+                    ; % not in backoff and nothing to send
                 end
-                % process result and update nodes/packets.
-                % once a packet gets to this point (past collision section),
-                % if it has errors, it will be "lost", no retries.
             end
         end
         
      % Post Transmission Packet Processing
      % Things ToDo here -----
-        % Update the Tdes fields of forwarding packets here
         % If Pkt.Des = Pkt.Tdes, destination reached. Increment the End to
         % End throughput counter. Else, increment Link Throughput counter. 
         % Expire packets that have collided > max retries
