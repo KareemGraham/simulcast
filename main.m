@@ -254,12 +254,12 @@
         for i=1:Mnum
            collision = 0;
            if (MCPC(i) == 1)
-               Nodes(i).TxMCB.State = Collision;
+               Nodes(i).TxMCB.State = Colli;
                Nodes(i).TxMCB.Rtr=Nodes(i).TxMCB.Rtr+1;
                collision = Nodes(i).TxMCB.Rtr;
            end
            if (LCPC == 1)
-               Nodes(i).TxLCB.State = Collision;
+               Nodes(i).TxLCB.State = Colli;
                Nodes(i).TxLCB.Rtr=Nodes(i).TxLCB.Rtr+1;
                
                if (Nodes(i).TxLCB.Rtr > collision) 
