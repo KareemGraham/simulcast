@@ -1,4 +1,4 @@
-function [ lcbm_err, lcam_err, mcbm_err, mcam_err] = simulcast_txrx( mcpacket, lcpacket, mcdist, lcdist, angle )
+function [ lcbm, lcam, mcbm, mcam, lcbm_err, lcam_err, mcbm_err, mcam_err] = simulcast_txrx( mcpacket, lcpacket, mcdist, lcdist, angle )
 %SIMULCAST_TXRX the function simulated simulcast traffic flow for uni- and
 %        multi-cast in the wireless network and return the error when  
 %        message recovery is fail.
@@ -29,24 +29,44 @@ function [ lcbm_err, lcam_err, mcbm_err, mcam_err] = simulcast_txrx( mcpacket, l
 %                 mcam_err - error to recover additional message for
 %                            more-capable node.
 %
+%                   lcbm: base message recovered by a less capable node.
+%                   lcam: additional message recovered by a less capable
+%                         node.
+%                   mcbm: base message recovered by a more capable node.
+%                   mcam: additional message recovered by a more capable
+%                         node.
+%
 %         *Note: the list size in mcdist must be equal to lcdist and mcdist
 %                must be less than lcdist
 %
 
-mcbm_err = zeros(1,length(mcdist));
-mcam_err = zeros(1,length(mcdist));
-lcbm_err = zeros(1,length(mcdist));
-lcam_err = zeros(1,length(mcdist));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%This code includes multicast; in case of unicast only, not need to use
+%this one.
+%
+%mcbm_err = zeros(1,length(mcdist));
+%mcam_err = zeros(1,length(mcdist));
+%lcbm_err = zeros(1,length(mcdist));
+%lcam_err = zeros(1,length(mcdist));
+% 
+% for i=1:length(mcdist)
+%     send = tx(mcpacket(i,:),lcpacket(i,:),angle);
+% 
+%     mc_rec = channelAWGN(send,mcdist(i));
+%     lc_rec = channelAWGN(send,lcdist(i));
+% 
+%     [mcbm(i,:), mcam(i,:), mcbm_err(i), mcam_err(i)]=rx(mc_rec);
+%     [lcbm(i,:), lcam(i,:), lcbm_err(i), lcam_err(i)]=rx(lc_rec);
+% end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-for i=1:length(mcdist)
-    send = tx(mcpacket(i,:),lcpacket(i,:),angle);
+send = tx(mcpacket,lcpacket,angle);
 
-    mc_rec = channelAWGN(send,mcdist(i));
-    lc_rec = channelAWGN(send,lcdist(i));
+mc_rec = channelAWGN(send,mcdist);
+lc_rec = channelAWGN(send,lcdist);
 
-    [bm, mc, mcbm_err(i), mcam_err(i)]=rx(mc_rec);
-    [lc, mc, lcbm_err(i), lcam_err(i)]=rx(lc_rec);
-end
+[mcbm, mcam, mcbm_err, mcam_err]=rx(mc_rec);
+[lcbm, lcam, lcbm_err, lcam_err]=rx(lc_rec);
 
 end
 
