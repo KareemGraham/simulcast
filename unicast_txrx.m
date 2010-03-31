@@ -1,4 +1,4 @@
-function [ err ] = unicast_txrx( packet, dist )
+function [ lcpacket, err ] = unicast_txrx( packet, dist )
 %UNICAST this function simulated the unicasting tranffic and multicasting 
 %        traffic in the wireless network and return the error when reception 
 %        fail.
@@ -17,7 +17,7 @@ err = zeros(1,length(dist));
 for i = 1:length(err)
     send = tx(0,packet(i,:),0);
     rec = channelAWGN(send,dist(i));
-    [lc,mc,err(i),me] = rx(rec);
+    [lcpacket(i,:),mc,err(i),mec] = rx(rec);
 end
 
 end
