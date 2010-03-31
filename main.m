@@ -225,8 +225,52 @@
         % valid for transmission. There are few changes that we may to do
         % in the packet scheduling. But it would not affect the processing
         % that we need to do from here on. 
+        
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %Summarize the transmission activity in each node in the activity 
+        %tables; then, evaluate if collision occurs
+        
+        MCPactivity=zeros(1,Mnum);
+        LCPactivity=zeros(1,Mnum);
 
-% Collision part goes here.. 
+        %Find out the activity in each node
+        for i=1:Mnum
+            if (Nodes(i).TxMCB.State == Ready)
+                MCPactivity(i) = Nodes(i).TxMCB.Tdes;
+            end
+            if (Nodes(i).TxLCB.State == Ready)
+                LCPactivity(i) = Nodes(i).TxLCB.Tdes;
+            end
+        end    
+
+        %Evaluation the activities to detection collision
+        MCPC = collision_detect(links,MCPactivity);
+        LCPC = collision_detect(links,LCPactivity);
+        
+        %Change the packets status when collision occurs and set the node
+        %to back-off according to the maximum # of retry between MC packet 
+        %retry count and LC packet retry count
+        for i=1:Mnum
+           collision = 0;
+           if (MCPC(i) == 1)
+               Nodes(i).TxMCB.State = Collision;
+               Nodes(i).TxMCB.Rtr=Nodes(i).TxMCB.Rtr+1;
+               collision = Nodes(i).TxMCB.Rtr;
+           end
+           if (LCPC == 1)
+               Nodes(i).TxLCB.State = Collision;
+               Nodes(i).TxLCB.Rtr=Nodes(i).TxLCB.Rtr+1;
+               
+               if (Nodes(i).TxLCB.Rtr > collision) 
+                    collision = Nodes(i).TxLCB.Rtr;
+               end     
+           end
+           
+           if (collision > 0)
+                Nodes(i).BoS = ceil(2^(collision)*rand(1)) + idxT;
+           end
+        end
         
         % Evaluate collisions and schedule retransmission slot
         % ceil(2^(num. of collisions)*rand(1)) is the binary exponential

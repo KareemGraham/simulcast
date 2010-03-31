@@ -9,10 +9,7 @@ function [ lcbm, lcam, mcbm, mcam, lcbm_err, lcam_err, mcbm_err, mcam_err] = sim
 %                          capable nodes.
 %                 lcdist* - the of distants in meter related to less capable
 %                          nodes.
-%                 angle - simulcasting angle in degree
-%                 
-%                 
-%
+%                 angle - simulcasting angle in degree                 
 %
 %        Output : err - return 0 when there is no error
 %                       return 1-10 when there is 1-10 bits error but
