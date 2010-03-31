@@ -148,7 +148,7 @@
             if NumPkts == 0
                 continue; % If new arrival pkts = 0, go to next node
             end
-            nHops = randi([1,Nodes(idxNode).Mhops],1,NumPkts);
+            nHops = randi([1,Nodes(SrcNode).Mhops],1,NumPkts);
             for i = 1:NumPkts % (What if NumPkts = 0 ??)
                 PossDes = nodes_with_n_hops(Links, SrcNode, nHops(i));
                 TempPkt.Des = PossDes(randi(length(PossDes)));
@@ -217,8 +217,6 @@
                  end
              end
         end
-            
-            
 
 % Collision part goes here.. 
         

@@ -9,6 +9,5 @@ global Pkt
     Tx_Queue.Pkts(1:(len-1)) = Tx_Queue.Pkts(2:len);
     Tx_Queue.len = len - 1; 
     % Delete the old packet
-    Tx_Queue(len) = Pkt;
-
+    Tx_Queue.Pkts(len) = Pkt;
     return;
