@@ -8,6 +8,11 @@
  clear all;
  clc;
  
+ % Global Parameters
+ global Node;
+ global n; % Path Loss Exponent
+ global Dmax; % Maximum Distance between two nodes
+  
  % Node parameters
  
  Mnum   = 15;       % Number of nodes on network
@@ -17,30 +22,26 @@
  
  
  % Declaring Slotted ALOHA Network Parameters
- 
  brate  = 512e3;    % Bit rate
  Srate  = 256e3;    % Symbol rate
  Plen   = 128;      % Packet Length in bits
  G      = 1;        % Offered Normalized Load to the Network
- R      = G/Mnum;   % Attempt Rate of nodes. 
+ R      = G/Mnum;   % Arrival Rate of packets at node
  % It is calculated as Offered Normalized Load/ No. of Nodes. So if the
  % normalized Load is 1, the number of packets each node would schedule to
  % transmit in Mnum slots should be only 1. Thus, on an average, the number
  % of packets tranmitted in each slot is 1/Mnum by each node. 
- global n;
  S      = 0;        % Network throughput
  RT     = 7;        % Maximum No. of retries for a packet before dropping
  n      = 4;        % Path Loss Exponent
  
  % Simulcast Parameters
- global Dmax;
  Theta  = 30;       % Offset angle in degrees
  Dmax   = 381;
  
  % Simulation Parameters
- 
  Nt     = 1500;     % Number of time slots simulated for each topology
- Ns     = 1;        % Number of topology simulations
+ Ns     = 10;        % Number of topology simulations
  dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
  % NP is calculated as the attempt rate times number of slots. This should
@@ -56,7 +57,7 @@
  
  % Packet States Enum (Not sure how many we need, just initializing)
  
- Inv    = 0;        % Packet is invalid
+ Invalid= 0;        % Packet is invalid
  Ready  = 1;        % Packet ready to be transmitted
  Trans  = 2;        % Packet Transmission Successful
  Colli  = 3;        % Packet Collision
@@ -70,7 +71,7 @@
  BC     = 3;        % Broadcast packet
  MC     = 4;        % Multicast packet
  
- % Packet Encapsulation (Do we declare a packet by new_pkt = Pkt???)
+ % Packet Structure Initialization
  % @Des : Final Destination of Packet
  % @Tdes : Destination Node during current transit
  % @Tsrc : Source Node during current transit
@@ -82,113 +83,141 @@
  Pkt = struct('Des', 0, 'Tdes', 0, 'Tsrc', 0, 'Src', 0, 'Type', 0, 'State', 0, 'Rtr', 0, 'Data', zeros(1,128), 'No', 0);
   
  % Queue Structure Initilization
- % @ VP: No. of valid packets in the queue. Points to the end of the queue
+ % @ len: Length of queue. When received a new packet, store in
+ % Queue(len+1) and len = len + 1
  % @ Pkts: Field to hold 100 instances of Pkt type
- Q = struct('VP', 0, 'Pkts', []);
+ Q = struct('len', 0, 'Pkts', []);
+ Q.len = 0;
  Q.Pkts = Pkt;
- Q.Pkts(NP) = Pkt;
+ Q.Pkts(1:NP) = Pkt;
  
  % Node Structure Initilization
  % @ ID: Node ID
  % @ TxMCB : More Capable Link Tx Buffer
  % @ TxLCB : Less Capable Link Tx Buffer
  % @ RxBuf : Receive Buffer
- % @ LCQ_Lcl : Less Capable Link Queue for Local originating packets
- % @ MCQ_Lcl : More Capable Link Queue for Local originating packets
- % @ LCQ_Fwd : Less Capable Link Queue for Remote originating packets
- % @ MCQ_Fwd : More Capable Link Queue for Remote originating packets
+ % @ LinkCount : Counter to keep successful Link Transmissions
+ % @ E2ECount : Counter to keep successful End to End Transmissions
+ % @ BoS : Back Off Slot - Next Tx Slot No. 
+ % @ X : X coordinate of the node
+ % @ Y : Y coordinate of the node
+ % @ Mhops : Maximum number of hops possible from this node
+ % @ LcLQ : Queue for Less capable - Local originating packets
+ % @ McLQ : Queue for More capable - Local originating packets
+ % @ LcFQ : Queue for Less capable - Forwarding packets
+ % @ McFQ : Queue for More capable - Forwarding packets
  
- Node   = struct('ID', 0, 'TxMCB', [], 'TxLCB', [], 'RxBuf', [], 'LCQ_Lcl', [], 'MCQ_Lcl', [], 'LCQ_Fwd', [],'MCQ_Fwd', []);
+ Node   = struct('ID', 0, 'TxMCB', [], 'TxLCB', [], 'RxBuf', [], 'LinkCount', 0, 'E2ECount', 0, 'BoS', 0, 'X', 0, 'Y', 0, 'Mhops', 0, 'LcLQ', [], 'McLQ', [], 'LcFQ', [],'McFQ', []);
  Node.TxMCB = Pkt;
  Node.TxLCB = Pkt;
  Node.RxBuf = Pkt;
- Node.LCQ_Lcl = Q;
- Node.MCQ_Lcl = Q;
- Node.LCQ_Fwd = Q;
- Node.MCQ_Fwd = Q;
+ Node.LcLQ = Q;
+ Node.McLQ = Q;
+ Node.LcFQ = Q;
+ Node.McFQ = Q;
  Nodes = Node;
- Nodes(Mnum) = Node;
+ Nodes(1:Mnum) = Node;
  
- % NW Layer just generates 100 packets for each node at the start of the
- % simulation. As the simulation proceeds, the packets from this queue are
- % fetched into LL_MCQ and LL_LCQ, which is Link Layer More Capable Queues
- % and Link Layer Less Capable Queues.
- 
- % Link Layer More Capable Queue. Each node would maintain a queue for the
- % packets which can be forwarded on the More capable link. Further, the
- % queue would have Pt type subqueues depending upon the packet type.
- % Forwarding type packets are prefered upon the Local originating packets.
- queues = struct('LCQ',{},'MCQ',{});
  % Start Topology Simulation
  for idxS = 1:Ns,
      % Get the node distribution, link table and max. no. of hops for each
      % node
-     [node, links, mhops] = topo(Mnum, Xmax, Ymax, Sig, Theta, dF);
+     [nodeXY, Links, Mh] = topo(Mnum, Xmax, Ymax, Sig, Theta, dF);
      
-     % Get the Hop Table for each Node. It consists of uniform random 
-     % distribution of the hops that a packet may need to make to reach its 
-     % destination in range [1,mhops(i)]
+     % Node Initialization 
      for idxNode = 1:Mnum
-         HopsT(idxNode,:) = randi([1,mhops(idxNode)],1,NP);
-         Node(idxNode).ID = idxNode;
-         Node(idxNode).iNWQ = 1;
-         Node(idxNode).iMCQ = [1 1];
-         Node(idxNode).iLCQ = [1 1];
-         % Construct the NP packets for each node. The packets by ith node
-         % need to make hops are stored in ith row of HopsT . Function
-         % nodes_with_n_hops(links, x, n) retruns the possible destinations 
-         % which can be reached in 'n' hops from 'x'. We pick one of these
-         % destinations randomly. route(src,des,links) returns the routing
-         % table between src and des nodes. 
-         for idxNP = 1:NP
-             % Original source is same as the idxNode
-             NW_Pkt(idxNode,idxNP).Src = idxNode;
-             % During first hop, Tsrc = Src
-             NW_Pkt(idxNode,idxNP).Tsrc = NW_Pkt(idxNode,idxNP).Src; 
-             % Get the possible destinations for the given hop and select 1
-             % of them randomly
-             PossDes = nodes_with_n_hops(links, idxNode, HopsT(idxNode,NP));
-             NW_Pkt(idxNode,idxNP).Des = PossDes(randi(length(PossDes)));
-             % Get the routing table and update the next transit
-             % destination
-             RouteDes = route(idxNode, NW_Pkt(idxNode,idxNP).Des, links ); 
-             NW_Pkt(idxNode,idxNP).Tdes = RouteDes(2);
-             NW_Pkt(idxNode,idxNP).Type = Normal;
-             NW_Pkt(idxNode,idxNP).State = Ready; % Ready to transmit
-             NW_Pkt(idxNode,idxNP).Rtr = 0;
-             NW_Pkt(idxNode,idxNP).No = idxNP;
-         end %for idxNP = 1:NP
-     end % for idxNode = 1:Mnum
-     
-     % Pre Transmission packet queue processing. I think it needs to be
-     % done before each Aloha Slot simulation. Will brainstorm and fix the
-     % placement of this code. 
-     
-     for idxNode = 1:Mnum
-         % Fetch the packet from NW queue into one of LL queue
-         idxNextPkt = Node(idxNode).iNWQ;
-         Node(idxNode).iNWQ = idxNextPkt + 1;
-         TempPkt = NW_Pkt(idxNode,idxNextPkt);
-         MoreCap = links(TempPkt.Tsrc,TempPkt.Tdes);
-         if MoreCap > 0
-             LL_MCQ(idxNode,Node(idxNode).iMCQ(1,Normal),Normal) = TempPkt;
-             Node(idxNode).iMCQ(1,Normal) = Node(idxNode).iMCQ(1,Normal) + 1; 
-         else
-             LL_LCQ(idxNode,Node(idxNode).iLCQ(1,Normal),Normal) = TempPkt;
-             Node(idxNode).iLCQ(1,Normal) = Node(idxNode).iLCQ(1,Normal) + 1;
-         end
+         Nodes(idxNode).ID  = idxNode;
+         Nodes(idxNode).X   = nodeXY(idxNode,1);
+         Nodes(idxNode).Y   = nodeXY(idxNode,2);
+         Nodes(idxNode).Mhops = Mh(idxNode);
      end
-     
-     % Simulate SLOHA Here: ToDo
-     collisions(Mnum) = 0; % initialize collision count for each node
+
      for idxT = 1:Nt
-        % Nodes that will attempt to transmit
-        for idxNode = 1:Mnum
-            % random chance that each will attempt to Tx
-            % then clean up list
-            % - force Tx if collision retry scheduled
-            % - no Tx if waiting on collision retry
+         
+        for SrcNode = 1:Mnum
+            TempPkt = Pkt;
+            TempPkt.Src = SrcNode;
+            TempPkt.Tsrc = SrcNode;
+            TempPkt.Type = Normal;
+            TempPkt.State = Ready;
+            % Get number of arriving packets as per Poisson Dist.
+            NumPkts = poissonTx(1); % Keeping it fixed right now. Need to discuss
+            if NumPkts == 0
+                continue; % If new arrival pkts = 0, go to next node
+            end
+            nHops = randi([1,Nodes(idxNode).Mhops],1,NumPkts);
+            for i = 1:NumPkts % (What if NumPkts = 0 ??)
+                PossDes = nodes_with_n_hops(Links, SrcNode, nHops(i));
+                TempPkt.Des = PossDes(randi(length(PossDes)));
+                RouteDes = route(SrcNode, TempPkt.Des, Links);
+                TempPkt.Tdes = RouteDes(2);
+                MoreCap = Links(TempPkt.Tsrc,TempPkt.Tdes);
+                if MoreCap > 0 % Can be put on the More Capable Link Queue
+                    len = Nodes(SrcNode).McLQ.len;
+                    Nodes(SrcNode).McLQ.Pkts(len+1) = TempPkt;
+                    Nodes(SrcNode).McLQ.len = len + 1;
+                else % Can be put on the Less Capable Link Queue
+                    len = Nodes(SrcNode).LcLQ.len;
+                    Nodes(SrcNode).LcLQ.Pkts(len+1) = TempPkt;
+                    Nodes(SrcNode).LcLQ.len = len + 1;
+                end
+            end
         end
+
+%%
+% Schedule the packet
+% Somethings to keep in mind while scheduling a packet for Tx: 
+% 1. Total no. of packets must be greater than zero for a node to be 
+% considered for tranmission. 
+% 2. Priority order will be McFQ, McLQ, LcFQ, LcLQ. If any of the queues have
+% non zero number of packets, consider scheduling the packets from this node
+% provided that:
+%     a. The packet in the queue has Pkt.State = Ready; and
+%     b. Node.TxMCB.State = Invalid or Node.TxLCB.State = Invalid
+%        depending upon which buffer the packet would be scheduled in. 
+% 3. If above conditions are met, fetch the packet from the queue. Decrement 
+% the lenght of the queue and copy the packet into the TxBuffer
+%%         
+
+        for i = 1:Mnum
+            TransPkt = Nodes(i).McFQ.len + Nodes(i).LcFQ.len + Nodes(i).McLQ.len + Nodes(i).LcLQ.len; % Total no. of packets in the node queues
+            if(TransPkt == 0)
+                continue;
+            end
+            % Since the packets are already sorted wrt having simulcast
+            % capacity or not, we just need to check the relevant queues
+            % for the non zero length.
+            if(Nodes(i).McFQ.len > 0) % More Capable Link rider fwd packet
+                if(Nodes(i).TxMCB.State == Invalid && Nodes(i).McFQ(1).state == Ready)
+                    Nodes(i).TxMCB = Nodes(i).McFQ(1); % Fetch first pkt
+                    len = Nodes(i).McFQ.len;
+                    % Shift the queue
+                    Nodes(i).McFQ(1:(len-1)) = Nodes(i).McFQ(2:len);
+                    Nodes(i).McFQ.len = len - 1; 
+                    % Delete the old packet
+                    Nodes(n).McFQ(len) = Pkt;
+                end
+                % Since either we schduled a More Capable link rider packet
+                % or one was already present in the node TxMCB, we must try
+                % to get a packet for less capable link.
+                if(Nodes(i).LcFQ.len > 0) % Less Capable Link rider fwd packet
+                    if(Nodes(i).TxLCB.State == Invalid && Nodes(i).LcFQ(1).state == Ready)
+                        Nodes(i).TxMCB = Nodes(i).McFQ(1); % Fetch first pkt
+                        len = Nodes(i).McFQ.len;
+                        % Shift the queue
+                        Nodes(i).McFQ(1:(len-1)) = Nodes(i).McFQ(2:len);
+                        Nodes(i).McFQ.len = len - 1; 
+                        % Delete the old packet
+                        Nodes(n).McFQ(len) = Pkt;
+                    end
+                end
+                    
+            end
+
+% % Sien you can assume that packets are scheduled in Nodes(i).TxMCB and
+% % Nodes(i).TxLCB. You can start writing the collision part. I need to add a
+% % few things to the previous routine. 
+        
         % Evaluate collisions and schedule retransmission slot
         % ceil(2^(num. of collisions)*rand(1)) is the binary exponential
         % backoff delay in # of slots
