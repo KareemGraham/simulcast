@@ -257,7 +257,9 @@
                 else
                     result=[]; % not in backoff and nothing to send
                 end
-                % process result and update nodes/packets
+                % process result and update nodes/packets.
+                % once a packet gets to this point (past collision section),
+                % if it has errors, it will be "lost", no retries.
             end
         end
         
