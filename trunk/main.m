@@ -7,7 +7,7 @@
  close all;
  clear all;
  clc;
- 
+ t1=clock;
  % Global Parameters
  global Node;
  global n; % Path Loss Exponent
@@ -40,7 +40,7 @@
  Dmax   = 381;
  
  % Simulation Parameters
- Nt     = 1500;     % Number of time slots simulated for each topology
+ Nt     = 1;     % Number of time slots simulated for each topology
  Ns     = 1;        % Number of topology simulations
  dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
@@ -245,8 +245,8 @@
         end    
 
         %Evaluation the activities to detection collision
-        MCPC = collision_detect(links,MCPactivity);
-        LCPC = collision_detect(links,LCPactivity);
+        MCPC = collision_detect(Links,MCPactivity);
+        LCPC = collision_detect(Links,LCPactivity);
         
         %Change the packets status when collision occurs and set the node
         %to back-off according to the maximum # of retry between MC packet 
@@ -293,8 +293,8 @@
                    % specific return values
                    [junk,junk,junk,junk,lcbm_err,junk,mcbm_err,mcam_err] =...
                        simulcast_txrx(Nodes(i).TxMCB.Data, Nodes(i).TxLCB.Data,...
-                       topo_dist(nodeXY, Nodes(i).TxMCB.Tsrc, Nodes(i).TxMCB.Tdes),...
-                       topo_dist(nodeXY, Nodes(i).TxLCB.Tsrc, Nodes(i).TxLCB.Tdes),...
+                       Links(Nodes(i).TxMCB.Tsrc, Nodes(i).TxMCB.Tdes),...
+                       Links(Nodes(i).TxLCB.Tsrc, Nodes(i).TxLCB.Tdes),...
                        Theta);
                    if (Nodes(i).TxMCB.Tdes == Nodes(i).TxLCB.Tdes) % both packets to MC dest
                        if (mcbm_err == 0) % base packet to MC node received
@@ -325,7 +325,7 @@
                    end
                 elseif (Nodes(i).TxMCB.State == Ready) % unicast MC packet
                     [junk,uni_err] = unicast_txrx(Nodes(i).TxMCB.Data,...
-                        topo_dist(nodeXY, Nodes(i).TxMCB.Tsrc, Nodes(i).TxMCB.Tdes));
+                        Links(Nodes(i).TxMCB.Tsrc, Nodes(i).TxMCB.Tdes));
                     if (uni_err == 0) % unicast packet received
                         mypkt = Nodes(i).TxMCB;
                         mypkt.Tsrc = mypkt.Tdes;
@@ -336,7 +336,7 @@
                     end
                 elseif (Nodes(i).TxLCB.State == Ready) % unicast LC packet
                     [junk,uni_err] = unicast_txrx(Nodes(i).TxLCB.Data,...
-                        topo_dist(nodeXY, Nodes(i).TxLCB.Tsrc, Nodes(i).TxLCB.Tdes));
+                        Links(Nodes(i).TxLCB.Tsrc, Nodes(i).TxLCB.Tdes));
                     if (uni_err == 0) % unicast packet received
                         mypkt = Nodes(i).TxLCB;
                         mypkt.Tsrc = mypkt.Tdes;
@@ -359,3 +359,5 @@
      end % for idxT = 1:Nt
      % Performance Graph code goes here
  end % for idxS = 1:Ns
+ t2=clock;
+ etime(t2,t1)
