@@ -1,4 +1,4 @@
-function [ bmpacket, ampacket,bmerr, amerr ] = rx( receive )
+function [ bmp, amp,bmerr, amerr ] = rx( receive )
 %RX function simulated receiver in PHY to decode the received packet
 %
 %           Input: receive - the signal received
@@ -23,6 +23,9 @@ dec = fec.bchdec(length(bm),length(bm)-n_k);
 %use the FEC to decode two received packets.
 [bmpacket, bmerr] = decode(dec,bm);
 [ampacket, amerr] = decode(dec,am);
+
+bmp = boolean(bmpacket);
+amp = boolean(ampacket);
 
 end
 
