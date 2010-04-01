@@ -19,12 +19,12 @@ enc = fec.bchenc(n,length(lcpacket));
 lcpacket = reshape(lcpacket,length(lcpacket),1);
 
 %Encode the less capable packet
-crclcp = encode(enc,lcpacket);
+crclcp = encode(enc,double(lcpacket));
 crcmcp = zeros(length(crclcp),1);
 
 %Encode the more capable packet if the offset angle is non-zero
 if offset ~= 0     
-     crcmcp = encode(enc,reshape(mcpacket,length(mcpacket),1));     
+     crcmcp = encode(enc,reshape(double(mcpacket),length(mcpacket),1));     
 end;
 
 %Apply channel coding for the two messages
