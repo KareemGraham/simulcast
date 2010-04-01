@@ -83,7 +83,7 @@
  % @Rtr : No. of Retries count for the packet
  % @Data : Packet Data
  global Pkt
- Pkt = struct('Des', 0, 'Tdes', 0, 'Tsrc', 0, 'Src', 0, 'Type', 0, 'State', 0, 'Rtr', 0, 'Data', zeros(1,Plen), 'No', 0);
+ Pkt = struct('Des', 0, 'Tdes', 0, 'Tsrc', 0, 'Src', 0, 'Type', 0, 'State', 0, 'Rtr', 0, 'Data', boolean(zeros(1,Plen)), 'No', 0);
   
  % Queue Structure Initilization
  % @ len: Length of queue. When received a new packet, store in
@@ -360,4 +360,4 @@
      % Performance Graph code goes here
  end % for idxS = 1:Ns
  t2=clock;
- etime(t2,t1)
+ Sim_time = etime(t2,t1)
