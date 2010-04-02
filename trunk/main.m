@@ -144,7 +144,7 @@
             TempPkt.Type = Normal;
             TempPkt.State = Ready;
             % Get number of arriving packets as per Poisson Dist.
-            NumPkts = poissonTx(1); % Keeping it fixed right now. Need to discuss
+            NumPkts = poissonTx(R); % Keeping it fixed right now. Need to discuss (change to Arrival Rate)
             if NumPkts == 0
                 continue; % If new arrival pkts = 0, go to next node
             end
@@ -155,6 +155,8 @@
                 RouteDes = route(SrcNode, TempPkt.Des, Links);
                 TempPkt.Tdes = RouteDes(2);
                 MoreCap = Links(TempPkt.Tsrc,TempPkt.Tdes);
+                %Sien: add the line to create a packet data
+                TempPkt.Data=create_packet(1);
                 if MoreCap > 0 % Can be put on the More Capable Link Queue
                     len = Nodes(SrcNode).McLQ.len;
                     Nodes(SrcNode).McLQ.Pkts(len+1) = TempPkt;
@@ -286,7 +288,7 @@
         
         for i=1:Mnum
             if Nodes(i).BoS <= idxT % backoff slot not in the future
-                if (Nodes(i).TxMCB.State == Ready && Nodes(i).TxLCB.State == Ready)
+                if (Nodes(i).TxMCB.State == Ready && Nodes(i).TxLCB.State == Ready) %Sien: Shall we check the retry here?
                    % simulcast
                    % junk is a variable to hold results I don't care about,
                    % if everyone had 2009b we could use ~ to ignore
@@ -295,56 +297,147 @@
                        simulcast_txrx(Nodes(i).TxMCB.Data, Nodes(i).TxLCB.Data,...
                        Links(Nodes(i).TxMCB.Tsrc, Nodes(i).TxMCB.Tdes),...
                        Links(Nodes(i).TxLCB.Tsrc, Nodes(i).TxLCB.Tdes),...
-                       Theta);
-                   if (Nodes(i).TxMCB.Tdes == Nodes(i).TxLCB.Tdes) % both packets to MC dest
-                       if (mcbm_err == 0) % base packet to MC node received
+                       Theta);                   
+                   %
+                   %Case 1: for both packets are going to MC node
+                   %
+                   if (Nodes(i).TxMCB.Tdes == Nodes(i).TxLCB.Tdes) 
+                       %Sien: packet only has error when err == -1
+                       if (mcbm_err == -1 && Nodes(i).TxLCB.Rtr > Rmax) %Reach Max retry
+                           % delete packet == set the packet to invalid 
+                           Nodes(i).TxLCB.Status = invalid;
+                           %No need to deal with the case of retry < max, since 
+                           %Retransmission will occur after back-off
+                       else % base packet to MC node received
+                           
                            mypkt = Nodes(i).TxLCB;
                            mypkt.Tsrc = mypkt.Tdes;
                            mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
                            % now how do we "assign" this packet to the
                            % right Tx queue on the receiving node?
-                       else
-                           % delete packet
-                       end
-                   end
-                   if (mcam_err == 0) % additional packet received
+                           
+                           %Now the mypkt.Tsrc is the formal reciver Node
+                           %ID
+                           %Check if the link the MC or LC
+                           MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
+                           if (MoreCap > 0)
+                               len = Nodes(mypkt.Tsrc).McFQ.len;
+                               Nodes(mypkt.Tsrc).McFQ.Pkts(len+1)=mypkt;
+                               Nodes(mypkt.Tsrc).McFQ.len = len + 1;
+                           else
+                               len = Nodes(mypkt.Tsrc).LcFQ.len;
+                               Nodes(mypkt.Tsrc).LcFQ.Pkts(len+1)=mypkt;
+                               Nodes(mypkt.Tsrc).LcFQ.len = len + 1;                               
+                           end                                                                                
+                       end %End of Case 1
+                       
+                   else %Case 2: for the base mesage is going to LC node                                                    
+                        if (lcbm_err == -1 && Nodes(i).TxLCB.Rtr > Rmax) %Reach Max retry
+                            % delete packet == set the packet to invalid 
+                            Nodes(i).TxLCB.Status = invalid;
+                            %No need to deal with the case of retry < max, since 
+                            %Retransmission will occur after back-off
+                        else % base packet to MC node received                          
+                            mypkt = Nodes(i).TxLCB;
+                            mypkt.Tsrc = mypkt.Tdes;
+                            mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
+                            % now how do we "assign" this packet to the
+                            % right Tx queue on the receiving node?
+                           
+                            %Now the mypkt.Tsrc is the formal reciver Node
+                            %ID
+                            %Check if the link the MC or LC
+                            MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
+                            if (MoreCap > 0)
+                                len = Nodes(mypkt.Tsrc).McFQ.len;
+                                Nodes(mypkt.Tsrc).McFQ.Pkts(len+1)=mypkt;
+                                Nodes(mypkt.Tsrc).McFQ.len = len + 1;
+                            else
+                                len = Nodes(mypkt.Tsrc).LcFQ.len;
+                                Nodes(mypkt.Tsrc).LcFQ.Pkts(len+1)=mypkt;
+                                Nodes(mypkt.Tsrc).LcFQ.len = len + 1;                               
+                            end                                                                               
+                        end
+                   end %End of Case 2                        
+                   %Case 3: to check the additional message for the MC node                   
+                   if (mcam_err == -1 && Nodes(i).TxMCB.Rtr > Rmax) 
+                        Nodes(i).TxMCB.Status = invalid;
+                       % delete packet
+                   else % add packet to receiving node's queue
                        mypkt = Nodes(i).TxMCB;
                        mypkt.Tsrc = mypkt.Tdes;
                        mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
-                       % add packet to receiving node's queue
-                   else
+                       
+                       %Sien: Assign the proper queue
+                       MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
+                       if (MoreCap > 0)
+                           len = Nodes(mypkt.Tsrc).McFQ.len;
+                           Nodes(mypkt.Tsrc).McFQ.Pkts(len+1)=mypkt;
+                           Nodes(mypkt.Tsrc).McFQ.len = len + 1;
+                       else
+                           len = Nodes(mypkt.Tsrc).LcFQ.len;
+                           Nodes(mypkt.Tsrc).LcFQ.Pkts(len+1)=mypkt;
+                           Nodes(mypkt.Tsrc).LcFQ.len = len + 1;                               
+                       end                       
+                   end %End of Case 3 
+                                      
+                elseif (Nodes(i).TxMCB.State == Ready) % unicast MC packet
+                    [bm,uni_err] = unicast_txrx(Nodes(i).TxMCB.Data,...
+                        Links(Nodes(i).TxMCB.Tsrc, Nodes(i).TxMCB.Tdes));
+                                                                                                                 
+                   if (uni_err == -1 && Nodes(i).TxMCB.Rtr > Rmax) 
+                        Nodes(i).TxMCB.Status = invalid;
                        % delete packet
-                   end
-                   if (lcbm_err == 0) % base packet to LC node received
-                       mypkt = Nodes(i).TxLCB;
+                   else % unicast packet received
+                       mypkt = Nodes(i).TxMCB;
                        mypkt.Tsrc = mypkt.Tdes;
                        mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
-                       % add packet to receiving node's queue
-                   else
-                       % delete packet
-                   end
-                elseif (Nodes(i).TxMCB.State == Ready) % unicast MC packet
-                    [junk,uni_err] = unicast_txrx(Nodes(i).TxMCB.Data,...
-                        Links(Nodes(i).TxMCB.Tsrc, Nodes(i).TxMCB.Tdes));
-                    if (uni_err == 0) % unicast packet received
-                        mypkt = Nodes(i).TxMCB;
-                        mypkt.Tsrc = mypkt.Tdes;
-                        mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
-                        % add packet to receiving queue
-                    else
-                        % delete packet
-                    end
+                       
+                       %Sien: Assign the proper queue
+                       MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
+                       if (MoreCap > 0)
+                           len = Nodes(mypkt.Tsrc).McFQ.len;
+                           Nodes(mypkt.Tsrc).McFQ.Pkts(len+1)=mypkt;
+                           Nodes(mypkt.Tsrc).McFQ.len = len + 1;
+                       else
+                           len = Nodes(mypkt.Tsrc).LcFQ.len;
+                           Nodes(mypkt.Tsrc).LcFQ.Pkts(len+1)=mypkt;
+                           Nodes(mypkt.Tsrc).LcFQ.len = len + 1;                               
+                       end                       
+                   end %End of Case 3 
+                                                         
                 elseif (Nodes(i).TxLCB.State == Ready) % unicast LC packet
+                    
                     [junk,uni_err] = unicast_txrx(Nodes(i).TxLCB.Data,...
                         Links(Nodes(i).TxLCB.Tsrc, Nodes(i).TxLCB.Tdes));
-                    if (uni_err == 0) % unicast packet received
-                        mypkt = Nodes(i).TxLCB;
-                        mypkt.Tsrc = mypkt.Tdes;
-                        mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
-                        % add packet to receiving queue
-                    else
-                        % delete packet
-                    end
+
+                     if (uni_err == -1 && Nodes(i).TxLCB.Rtr > Rmax) %Reach Max retry
+                            % delete packet == set the packet to invalid 
+                            Nodes(i).TxLCB.Status = invalid;
+                            %No need to deal with the case of retry < max, since 
+                            %Retransmission will occur after back-off
+                     else % base packet to MC node received                          
+                            mypkt = Nodes(i).TxLCB;
+                            mypkt.Tsrc = mypkt.Tdes;
+                            mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
+                            % now how do we "assign" this packet to the
+                            % right Tx queue on the receiving node?
+                           
+                            %Now the mypkt.Tsrc is the formal reciver Node
+                            %ID
+                            %Check if the link the MC or LC
+                        MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
+                         if (MoreCap > 0)
+                                len = Nodes(mypkt.Tsrc).McFQ.len;
+                                Nodes(mypkt.Tsrc).McFQ.Pkts(len+1)=mypkt;
+                                Nodes(mypkt.Tsrc).McFQ.len = len + 1;
+                         else
+                                len = Nodes(mypkt.Tsrc).LcFQ.len;
+                                Nodes(mypkt.Tsrc).LcFQ.Pkts(len+1)=mypkt;
+                                Nodes(mypkt.Tsrc).LcFQ.len = len + 1;                               
+                         end                                                                               
+                      end
+                                                           
                 else
                     ; % not in backoff and nothing to send
                 end
