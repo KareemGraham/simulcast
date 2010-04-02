@@ -12,6 +12,7 @@
  global Node;
  global n; % Path Loss Exponent
  global Dmax; % Maximum Distance between two nodes
+ global idxT % Current time slot clock counter
   
  % Node parameters
  
@@ -58,7 +59,7 @@
  % Packet States Enum (Not sure how many we need, just initializing)
  
  global Invalid Ready Trans Colli Retry Rmax
- 
+
  Invalid= 0;        % Packet is invalid
  Ready  = 1;        % Packet ready to be transmitted
  Trans  = 2;        % Packet Transmission Successful
@@ -95,9 +96,16 @@
  Q.Pkts(1:NP) = Pkt;
  
  % Node State
+ global NoPkt Ready2Tx BackOff
  NoPkt = 0;
  Ready2Tx = 1;
  BackOff = 2;
+ 
+ % Events that lead to a change of Node States
+ global NewPkt Collision TxSuccess
+ NewPkt = 1;
+ Collision = 2;
+ TxSuccess = 3;
  
  % Node Structure Initilization
  % @ ID: Node ID
@@ -125,12 +133,12 @@
  Node.LcFQ = Q;
  Node.McFQ = Q;
  Nodes = Node;
- Nodes(1:Mnum) = Node;
  
  % Start Topology Simulation
  for idxS = 1:Ns,
      % Get the node distribution, link table and max. no. of hops for each
      % node
+     Nodes(1:Mnum) = Node; % Clear all the nodes when simulating new topology
      [nodeXY, Links, Mh] = topo(Mnum, Xmax, Ymax, Sig, Theta, dF);
      
      % Node Initialization 
@@ -139,18 +147,21 @@
          Nodes(idxNode).X   = nodeXY(idxNode,1);
          Nodes(idxNode).Y   = nodeXY(idxNode,2);
          Nodes(idxNode).Mhops = Mh(idxNode);
+         Nodes(idxNode).State = NoPkt; % None of the nodes has pkts initially
      end
 
      for idxT = 1:Nt
-         
+
         for SrcNode = 1:Mnum
+            %%%%%%%% First Process the Node State %%%%%%%%%%%%%%%%%
+            
             TempPkt = Pkt;
             TempPkt.Src = SrcNode;
             TempPkt.Tsrc = SrcNode;
             TempPkt.Type = Normal;
             TempPkt.State = Ready;
             % Get number of arriving packets as per Poisson Dist.
-            NumPkts = poissonTx(R); % Keeping it fixed right now. Need to discuss (change to Arrival Rate)
+            NumPkts = poissonTx(R); % As per Arrival Rate as per Poisson DB
             if NumPkts == 0
                 continue; % If new arrival pkts = 0, go to next node
             end
@@ -176,7 +187,7 @@
         end
 
 
-% Schedule the packet
+%%%%%%%%%%%%%%%%%%%%% Schedule the packet %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Somethings to keep in mind while scheduling a packet for Tx: 
 % 1. Total no. of packets must be greater than zero for a node to be 
 % considered for tranmission. 
@@ -215,20 +226,27 @@
                 elseif (Nodes(i).McFQ.len > 0 && Nodes(i).McFQ.Pkts(1).State == Ready)
                     [Nodes(i).TxLCB, Nodes(i).McFQ] = schd_pkt(Nodes(i).TxLCB, Nodes(i).McFQ);
                 end
+                % Since TransPkt > 0, at least one of these queues did have
+                % packet. Thus, we must run the Node State Machine to
+                % update the state of the this node. 
+                [Nodes(i)] = update_node_state(Nodes(i), NewPkt); 
             end
              
              if(Nodes(i).TxMCB.State == Invalid) % MCL Rider Buffer Empty
                  % Check for MCL Rider Local Packet Queue First
                 if(Nodes(i).McLQ.len > 0 && Nodes(i).McLQ.Pkts(1).State == Ready)
                     [Nodes(i).TxMCB, Nodes(i).McLQ] = schd_pkt(Nodes(i).TxMCB, Nodes(i).McLQ);
+                    [Nodes(i)] = update_node_state(Nodes(i), NewPkt); % Nodes(i).State must be BackOff or Ready
                     % Try scheduling a MCL Rider Fwd Packet next
                 elseif(Nodes(i).McFQ.len > 0 && Nodes(i).McFQ.Pkts(1).State == Ready)
                     [Nodes(i).TxMCB, Nodes(i).McFQ] = schd_pkt(Nodes(i).TxMCB, Nodes(i).McFQ);
+                    [Nodes(i)] = update_node_state(Nodes(i), NewPkt); % Nodes(i).State must be BackOff or Ready
                 end
             end
         end
         
-        
+%%%%%%%%%%%%%%%%%%%%Scheduling the Packet Ends Here %%%%%%%%%%%%%%%%%%%%%%%        
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % From this point on, for all the further purposes, one can assume
         % that the packets are scheduled in TxMCB and TxLCB of the Nodes.
@@ -280,7 +298,7 @@
            end
            
            if (collision > 0)
-                Nodes(i).BoS = ceil(2^(collision)*rand(1)) + idxT;
+                Nodes(i).BoS = ceil(2^(collision)*rand(1)) + idxT;  
            end
         end
         
