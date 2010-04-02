@@ -40,7 +40,7 @@
  Dmax   = 381;
  
  % Simulation Parameters
- Nt     = 1;     % Number of time slots simulated for each topology
+ Nt     = 100;     % Number of time slots simulated for each topology
  Ns     = 1;        % Number of topology simulations
  dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
@@ -312,7 +312,8 @@
                            
                            mypkt = Nodes(i).TxLCB;
                            mypkt.Tsrc = mypkt.Tdes;
-                           mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
+                           RouteDes = route(mypkt.Tsrc, mypkt.Des, Links);
+                           mypkt.Tdes = RouteDes(2);
                            % now how do we "assign" this packet to the
                            % right Tx queue on the receiving node?
                            
@@ -340,7 +341,8 @@
                         else % base packet to MC node received                          
                             mypkt = Nodes(i).TxLCB;
                             mypkt.Tsrc = mypkt.Tdes;
-                            mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
+                            RouteDes = route(mypkt.Tsrc, mypkt.Des, Links);
+                            mypkt.Tdes = RouteDes(2);
                             % now how do we "assign" this packet to the
                             % right Tx queue on the receiving node?
                            
@@ -391,7 +393,8 @@
                    else % unicast packet received
                        mypkt = Nodes(i).TxMCB;
                        mypkt.Tsrc = mypkt.Tdes;
-                       mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
+                       RouteDes = route(mypkt.Tsrc, mypkt.Des, Links);
+                       mypkt.Tdes = RouteDes(2);
                        
                        %Sien: Assign the proper queue
                        MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
@@ -419,7 +422,8 @@
                      else % base packet to MC node received                          
                             mypkt = Nodes(i).TxLCB;
                             mypkt.Tsrc = mypkt.Tdes;
-                            mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
+                            RouteDes = route(mypkt.Tsrc, mypkt.Des, Links);
+                            mypkt.Tdes = RouteDes(2);
                             % now how do we "assign" this packet to the
                             % right Tx queue on the receiving node?
                            
