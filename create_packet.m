@@ -11,7 +11,7 @@ function [packets] = create_packet(npack)
 packetSize = 923;
 
 %generate a random packet with fixed length 
-packets = round(rand(npack, packetSize));
+packets = boolean(round(rand(npack, packetSize)));
 
 
 end
