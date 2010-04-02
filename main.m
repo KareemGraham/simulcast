@@ -282,6 +282,11 @@
         %to back-off according to the maximum # of retry between MC packet 
         %retry count and LC packet retry count
         for i=1:Mnum
+            
+           if Nodes(i).BoS > idxT 
+                continue; %Skip collision in case the Node is in backoff 
+           end   
+           
            collision = 0;
            if (MCPC(i) == 1)
                Nodes(i).TxMCB.State = Colli;
@@ -333,10 +338,15 @@
                        %Sien: packet only has error when err == -1
                        if (mcbm_err == -1 && Nodes(i).TxLCB.Rtr > Rmax) %Reach Max retry
                            % delete packet == set the packet to invalid 
-                           Nodes(i).TxLCB.Status = invalid;
+                           Nodes(i).TxLCB.Status = Invalid;
                            %No need to deal with the case of retry < max, since 
                            %Retransmission will occur after back-off
-                       else % base packet to MC node received
+                       elseif (mcbm_err ~= -1 && Nodes(i).TxLCB.Tdes == Nodes(i).TxLCB.Des)
+                           %Case when the packet reach its final
+                           %destination, delete the packet and update the
+                           %both end to end and link to link throughput counters.               
+                           Nodes(i).TxLCB.Status = Invalid;%
+                       elseif (mcbm_err ~= -1) % base packet to MC node received
                            
                            mypkt = Nodes(i).TxLCB;
                            mypkt.Tsrc = mypkt.Tdes;
@@ -363,10 +373,14 @@
                    else %Case 2: for the base mesage is going to LC node                                                    
                         if (lcbm_err == -1 && Nodes(i).TxLCB.Rtr > Rmax) %Reach Max retry
                             % delete packet == set the packet to invalid 
-                            Nodes(i).TxLCB.Status = invalid;
+                            Nodes(i).TxLCB.Status = Invalid;
                             %No need to deal with the case of retry < max, since 
                             %Retransmission will occur after back-off
-                        else % base packet to MC node received                          
+                        elseif (lcbm_err ~= -1 && Nodes(i).TxLCB.Tdes == Nodes(i).TxLCB.Des)
+                            Nodes(i).TxLCB.Status = Invalid;
+                            %Need to increment End-to-End and Link-to-Link throughput
+                            %counter
+                        elseif (lcbm_err ~= -1) % base packet to MC node received                          
                             mypkt = Nodes(i).TxLCB;
                             mypkt.Tsrc = mypkt.Tdes;
                             RouteDes = route(mypkt.Tsrc, mypkt.Des, Links);
@@ -391,9 +405,12 @@
                    end %End of Case 2                        
                    %Case 3: to check the additional message for the MC node                   
                    if (mcam_err == -1 && Nodes(i).TxMCB.Rtr > Rmax) 
-                        Nodes(i).TxMCB.Status = invalid;
+                        Nodes(i).TxMCB.Status = Invalid;
                        % delete packet
-                   else % add packet to receiving node's queue
+                   elseif (mcam_err ~= -1 && Nodes(i).TxMCB.Tdes == Nodes(i).TxMCB.Des)
+                       Nodes(i).TxMCB.Status = Invalid;
+                       %Update Both throughput counter
+                   elseif (mcam_err == -1) % add packet to receiving node's queue
                        mypkt = Nodes(i).TxMCB;
                        mypkt.Tsrc = mypkt.Tdes;
                        mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
@@ -416,9 +433,12 @@
                         Links(Nodes(i).TxMCB.Tsrc, Nodes(i).TxMCB.Tdes));
                                                                                                                  
                    if (uni_err == -1 && Nodes(i).TxMCB.Rtr > Rmax) 
-                        Nodes(i).TxMCB.Status = invalid;
+                        Nodes(i).TxMCB.Status = Invalid;
                        % delete packet
-                   else % unicast packet received
+                   elseif (uni_err ~= -1 && Nodes(i).TxMCB.Tdes == Nodes(i).TxMCB.Des)    
+                       Nodes(i).TxMCB.Status = Invalid;
+                       %Update ETE and LTL throughput
+                   elseif (uni_err ~= -1) % unicast packet received
                        mypkt = Nodes(i).TxMCB;
                        mypkt.Tsrc = mypkt.Tdes;
                        RouteDes = route(mypkt.Tsrc, mypkt.Des, Links);
@@ -444,9 +464,12 @@
 
                      if (uni_err == -1 && Nodes(i).TxLCB.Rtr > Rmax) %Reach Max retry
                             % delete packet == set the packet to invalid 
-                            Nodes(i).TxLCB.Status = invalid;
+                            Nodes(i).TxLCB.Status = Invalid;
                             %No need to deal with the case of retry < max, since 
                             %Retransmission will occur after back-off
+                     elseif (uni_err ~= -1 && Nodes(i).TxLCB.Tdes == Nodes(i).TxLCB.Des) 
+                            Nodes(i).TxLCB.Status = Invalid;
+                            %Update ETE LTL throughput
                      else % base packet to MC node received                          
                             mypkt = Nodes(i).TxLCB;
                             mypkt.Tsrc = mypkt.Tdes;
@@ -477,7 +500,7 @@
         end
         
      % Post Transmission Packet Processing
-     % Things ToDo here -----
+     % Things ToDo here ----- (Sien: the following task was done in the loop)
         % If Pkt.Des = Pkt.Tdes, destination reached. Increment the End to
         % End throughput counter. Else, increment Link Throughput counter. 
         % Expire packets that have collided > max retries
