@@ -94,6 +94,11 @@
  Q.Pkts = Pkt;
  Q.Pkts(1:NP) = Pkt;
  
+ % Node State
+ NoPkt = 0;
+ Ready2Tx = 1;
+ BackOff = 2;
+ 
  % Node Structure Initilization
  % @ ID: Node ID
  % @ TxMCB : More Capable Link Tx Buffer
@@ -102,6 +107,7 @@
  % @ LinkCount : Counter to keep successful Link Transmissions
  % @ E2ECount : Counter to keep successful End to End Transmissions
  % @ BoS : Back Off Slot - Next Tx Slot No. 
+ % @ State : State of the Node. Look at "Node State" Table
  % @ X : X coordinate of the node
  % @ Y : Y coordinate of the node
  % @ Mhops : Maximum number of hops possible from this node
@@ -110,7 +116,7 @@
  % @ LcFQ : Queue for Less capable - Forwarding packets
  % @ McFQ : Queue for More capable - Forwarding packets
  
- Node   = struct('ID', 0, 'TxMCB', [], 'TxLCB', [], 'RxBuf', [], 'LinkCount', 0, 'E2ECount', 0, 'BoS', 0, 'X', 0, 'Y', 0, 'Mhops', 0, 'LcLQ', [], 'McLQ', [], 'LcFQ', [],'McFQ', []);
+ Node   = struct('ID', 0, 'TxMCB', [], 'TxLCB', [], 'RxBuf', [], 'LinkCount', 0, 'E2ECount', 0, 'BoS', 0, 'State', 0, 'X', 0, 'Y', 0, 'Mhops', 0, 'LcLQ', [], 'McLQ', [], 'LcFQ', [],'McFQ', []);
  Node.TxMCB = Pkt;
  Node.TxLCB = Pkt;
  Node.RxBuf = Pkt;
@@ -149,7 +155,7 @@
                 continue; % If new arrival pkts = 0, go to next node
             end
             nHops = randi([1,Nodes(SrcNode).Mhops],1,NumPkts);
-            for i = 1:NumPkts % (What if NumPkts = 0 ??)
+            for i = 1:NumPkts
                 PossDes = nodes_with_n_hops(Links, SrcNode, nHops(i));
                 TempPkt.Des = PossDes(randi(length(PossDes)));
                 RouteDes = route(SrcNode, TempPkt.Des, Links);
@@ -169,7 +175,7 @@
             end
         end
 
-%%
+
 % Schedule the packet
 % Somethings to keep in mind while scheduling a packet for Tx: 
 % 1. Total no. of packets must be greater than zero for a node to be 
@@ -181,8 +187,7 @@
 %     b. Node.TxMCB.State = Invalid or Node.TxLCB.State = Invalid
 %        depending upon which buffer the packet would be scheduled in. 
 % 3. If above conditions are met, fetch the packet from the queue. Decrement 
-% the lenght of the queue and copy the packet into the TxBuffer
-%%         
+% the lenght of the queue and copy the packet into the TxBuffer  
 
         for i = 1:Mnum
             TransPkt = Nodes(i).McFQ.len + Nodes(i).LcFQ.len + Nodes(i).McLQ.len + Nodes(i).LcLQ.len; % Total no. of packets in the node queues
@@ -190,35 +195,40 @@
             if(TransPkt == 0)
                 continue;
             end
-            % Since the packets are already sorted wrt having simulcast
-            % capacity or not, we just need to check the relevant queues
-            % for the non zero length.
-            % Try scheduling a MC Local Packet first
-            if(Nodes(i).McLQ.len > 0) % More Capable Link rider fwd packet
-                if(Nodes(i).TxMCB.State == Invalid && Nodes(i).McLQ.Pkts(1).State == Ready)
-                    [Nodes(i).TxMCB, Nodes(i).McLQ] = schd_pkt(Nodes(i).TxMCB, Nodes(i).McLQ);
+            % As per the discussion, we must try to schedule MCL-LCL combo
+            % first. If no LCL rider packet is available, we end up
+            % scheduling MCL-MCL rider packets in MCB and LCB. Restructuring
+            % if-elseif for more efficient implementation. 
+            % Check if there is an LCL rider packet available. 
+            
+            if(Nodes(i).TxLCB.State == Invalid) % LCL Rider Buffer Empty
+                % Check for LCL rider Local packet queue first
+                if (Nodes(i).LcLQ.len > 0 && Nodes(i).LcLQ.Pkts(1).State == Ready)
+                    [Nodes(i).TxLCB, Nodes(i).LcLQ] = schd_pkt(Nodes(i).TxLCB, Nodes(i).LcLQ);
+                    % Check for LCL rider Fwd packet queue next
+                elseif (Nodes(i).LcFQ.len > 0 && Nodes(i).LcFQ.Pkts(1).State == Ready)
+                    [Nodes(i).TxLCB, Nodes(i).LcFQ] = schd_pkt(Nodes(i).TxLCB, Nodes(i).LcFQ);
+                    % If no LCL Local packet available, try MCL Local packet
+                elseif (Nodes(i).McLQ.len > 0 && Nodes(i).McLQ.Pkts(1).State == Ready)
+                    [Nodes(i).TxLCB, Nodes(i).McLQ] = schd_pkt(Nodes(i).TxLCB, Nodes(i).McLQ);
+                    % If no MCL Local packet available, try MCL FWD packet
+                elseif (Nodes(i).McFQ.len > 0 && Nodes(i).McFQ.Pkts(1).State == Ready)
+                    [Nodes(i).TxLCB, Nodes(i).McFQ] = schd_pkt(Nodes(i).TxLCB, Nodes(i).McFQ);
                 end
-            % Try scheduling a MC Fwd Packet next
-            elseif(Nodes(i).McFQ.len > 0) % More Capable Link rider Local packet
-                if(Nodes(i).TxMCB.State == Invalid && Nodes(i).McFQ.Pkts(1).State == Ready)
+            end
+             
+             if(Nodes(i).TxMCB.State == Invalid) % MCL Rider Buffer Empty
+                 % Check for MCL Rider Local Packet Queue First
+                if(Nodes(i).McLQ.len > 0 && Nodes(i).McLQ.Pkts(1).State == Ready)
+                    [Nodes(i).TxMCB, Nodes(i).McLQ] = schd_pkt(Nodes(i).TxMCB, Nodes(i).McLQ);
+                    % Try scheduling a MCL Rider Fwd Packet next
+                elseif(Nodes(i).McFQ.len > 0 && Nodes(i).McFQ.Pkts(1).State == Ready)
                     [Nodes(i).TxMCB, Nodes(i).McFQ] = schd_pkt(Nodes(i).TxMCB, Nodes(i).McFQ);
                 end
             end
-            % Since either we schduled a More Capable link rider packet
-            % or one was already present in the node TxMCB, or there is no
-            % Simulcast capability that the node has. In all cases, we
-            % should try to schedule a packet in the Less capable link
-            % queue starting with local queue
-             if(Nodes(i).LcLQ.len > 0) % Less Capable Link rider Local packet
-                 if(Nodes(i).TxLCB.State == Invalid && Nodes(i).LcLQ.Pkts(1).State == Ready)
-                     [Nodes(i).TxLCB, Nodes(i).LcLQ] = schd_pkt(Nodes(i).TxLCB, Nodes(i).LcLQ);
-                 end
-             elseif(Nodes(i).LcFQ.len > 0) % Less Capable Link rider Forward packet
-                 if (Nodes(i).TxLCB.State == Invalid && Nodes(i).LcFQ.Pkts(1).State == Ready)
-                     [Nodes(i).TxLCB, Nodes(i).LcFQ] = schd_pkt(Nodes(i).TxLCB, Nodes(i).LcFQ);
-                 end
-             end
         end
+        
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % From this point on, for all the further purposes, one can assume
         % that the packets are scheduled in TxMCB and TxLCB of the Nodes.
