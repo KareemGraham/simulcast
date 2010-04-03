@@ -2,7 +2,7 @@ function [node] = update_node_state(node, event)
 % Node State Machine
 % node.State belongs to {NoPkt,Ready2Tx,BackOff} states
 % event belongs to {NewPkt,Collision,TxSuccess} events
-global NoPkt Read2Tx BackOff
+global NoPkt Ready2Tx BackOff
 global NewPkt Collision TxSuccess
 global idxT
 % Some of the node.State and event combinations may be irrelavent in the
