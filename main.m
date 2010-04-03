@@ -41,7 +41,7 @@
  Dmax   = 381;
  
  % Simulation Parameters
- Nt     = 100;     % Number of time slots simulated for each topology
+ Nt     = 150;     % Number of time slots simulated for each topology
  Ns     = 1;        % Number of topology simulations
  dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
@@ -128,7 +128,7 @@
  Node   = struct('ID', 0, 'TxMCB', [], 'TxLCB', [], 'RxBuf', [], 'LinkCount', 0, 'E2ECount', 0, 'BoS', 0, 'State', 0, 'X', 0, 'Y', 0, 'Mhops', 0, 'LcLQ', [], 'McLQ', [], 'LcFQ', [],'McFQ', []);
  Node.TxMCB = Pkt;
  Node.TxLCB = Pkt;
- Node.RxBuf = Pkt;
+ Node.RxBuf = Q; %Sien: change the rx buff to be a queue
  Node.LcLQ = Q;
  Node.McLQ = Q;
  Node.LcFQ = Q;
@@ -240,18 +240,18 @@
                 % Since TransPkt > 0, at least one of these queues did have
                 % packet. Thus, we must run the Node State Machine to
                 % update the state of the this node. 
-                [Nodes(i)] = update_node_state(Nodes(i), NewPkt); 
+%                [Nodes(i)] = update_node_state(Nodes(i), NewPkt); 
             end
              
              if(Nodes(i).TxMCB.State == Invalid) % MCL Rider Buffer Empty
                  % Check for MCL Rider Local Packet Queue First
                 if(Nodes(i).McLQ.len > 0 && Nodes(i).McLQ.Pkts(1).State == Ready)
                     [Nodes(i).TxMCB, Nodes(i).McLQ] = schd_pkt(Nodes(i).TxMCB, Nodes(i).McLQ);
-                    [Nodes(i)] = update_node_state(Nodes(i), NewPkt); % Nodes(i).State must be BackOff or Ready
+%                    [Nodes(i)] = update_node_state(Nodes(i), NewPkt); % Nodes(i).State must be BackOff or Ready
                     % Try scheduling a MCL Rider Fwd Packet next
                 elseif(Nodes(i).McFQ.len > 0 && Nodes(i).McFQ.Pkts(1).State == Ready)
                     [Nodes(i).TxMCB, Nodes(i).McFQ] = schd_pkt(Nodes(i).TxMCB, Nodes(i).McFQ);
-                    [Nodes(i)] = update_node_state(Nodes(i), NewPkt); % Nodes(i).State must be BackOff or Ready
+%                    [Nodes(i)] = update_node_state(Nodes(i), NewPkt); % Nodes(i).State must be BackOff or Ready
                 end
             end
         end
@@ -357,50 +357,46 @@
                        %Sien: packet only has error when err == -1
                        if (mcbm_err == -1 && Nodes(i).TxLCB.Rtr > Rmax) %Reach Max retry
                            % delete packet == set the packet to invalid 
-                           Nodes(i).TxLCB.Status = Invalid;
+                           Nodes(i).TxLCB.State = Invalid;
                            %No need to deal with the case of retry < max, since 
                            %Retransmission will occur after back-off
                        elseif (mcbm_err ~= -1 && Nodes(i).TxLCB.Tdes == Nodes(i).TxLCB.Des)
                            %Case when the packet reach its final
                            %destination, delete the packet and update the
                            %both end to end and link to link throughput counters.               
-                           Nodes(i).TxLCB.Status = Invalid;%
+                           Nodes(i).TxLCB.State = Invalid;%
                            etecount = etecount + 1;
                            ltlcount = ltlcount + 1;
-                       elseif (mcbm_err ~= -1) % base packet to MC node received
-                           
+                       elseif (mcbm_err ~= -1) % base packet to MC node received                                                                                 
                            mypkt = Nodes(i).TxLCB;
                            mypkt.Tsrc = mypkt.Tdes;
                            RouteDes = route(mypkt.Tsrc, mypkt.Des, Links);
                            mypkt.Tdes = RouteDes(2);
-                           % now how do we "assign" this packet to the
-                           % right Tx queue on the receiving node?
                            
+                           %Set the Tx buffer to empty                           
+                           Nodes(i).TxLCB.State = Invalid;
+%                           %Set the Rx packet to be received
+%                           mypkt.Status = Trans;
+                                                      
                            %Now the mypkt.Tsrc is the formal reciver Node
                            %ID
-                           %Check if the link the MC or LC
-                           MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
-                           if (MoreCap > 0)
-                               len = Nodes(mypkt.Tsrc).McFQ.len;
-                               Nodes(mypkt.Tsrc).McFQ.Pkts(len+1)=mypkt;
-                               Nodes(mypkt.Tsrc).McFQ.len = len + 1;
-                           else
-                               len = Nodes(mypkt.Tsrc).LcFQ.len;
-                               Nodes(mypkt.Tsrc).LcFQ.Pkts(len+1)=mypkt;
-                               Nodes(mypkt.Tsrc).LcFQ.len = len + 1;                               
-                           end
+                           len = Nodes(mypkt.Tsrc).RxBuf.len+1;
+                           Nodes(mypkt.Tsrc).RxBuf.Pkts(len) = mypkt;
+                           Nodes(mypkt.Tsrc).RxBuf.len = len;
+                           
                            %increment Link to Link throughput
-                           ltlcount = ltlcount + 1;
+                           ltlcount = ltlcount + 1;                           
+
                        end %End of Case 1
                        
                    else %Case 2: for the base mesage is going to LC node                                                    
                         if (lcbm_err == -1 && Nodes(i).TxLCB.Rtr > Rmax) %Reach Max retry
                             % delete packet == set the packet to invalid 
-                            Nodes(i).TxLCB.Status = Invalid;
+                            Nodes(i).TxLCB.State = Invalid;
                             %No need to deal with the case of retry < max, since 
                             %Retransmission will occur after back-off
                         elseif (lcbm_err ~= -1 && Nodes(i).TxLCB.Tdes == Nodes(i).TxLCB.Des)
-                            Nodes(i).TxLCB.Status = Invalid;
+                            Nodes(i).TxLCB.State = Invalid;
                             %Need to increment End-to-End and Link-to-Link throughput
                             %counter
                             etecount = etecount + 1;
@@ -410,32 +406,27 @@
                             mypkt.Tsrc = mypkt.Tdes;
                             RouteDes = route(mypkt.Tsrc, mypkt.Des, Links);
                             mypkt.Tdes = RouteDes(2);
+                                                        
+                            Nodes(i).TxLCB.State = Invalid;
+%                            mypkt.Status = Trans;
                             % now how do we "assign" this packet to the
                             % right Tx queue on the receiving node?
                            
                             %Now the mypkt.Tsrc is the formal reciver Node
                             %ID
-                            %Check if the link the MC or LC
-                            MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
-                            if (MoreCap > 0)
-                                len = Nodes(mypkt.Tsrc).McFQ.len;
-                                Nodes(mypkt.Tsrc).McFQ.Pkts(len+1)=mypkt;
-                                Nodes(mypkt.Tsrc).McFQ.len = len + 1;
-                            else
-                                len = Nodes(mypkt.Tsrc).LcFQ.len;
-                                Nodes(mypkt.Tsrc).LcFQ.Pkts(len+1)=mypkt;
-                                Nodes(mypkt.Tsrc).LcFQ.len = len + 1;                               
-                            end
-
+                            len = Nodes(mypkt.Tsrc).RxBuf.len+1;
+                            Nodes(mypkt.Tsrc).RxBuf.Pkts(len) = mypkt;
+                            Nodes(mypkt.Tsrc).RxBuf.len = len;
+                            
                             ltlcount = ltlcount + 1;
                         end
                    end %End of Case 2                        
                    %Case 3: to check the additional message for the MC node                   
                    if (mcam_err == -1 && Nodes(i).TxMCB.Rtr > Rmax) 
-                        Nodes(i).TxMCB.Status = Invalid;
+                        Nodes(i).TxMCB.State = Invalid;
                        % delete packet
                    elseif (mcam_err ~= -1 && Nodes(i).TxMCB.Tdes == Nodes(i).TxMCB.Des)
-                       Nodes(i).TxMCB.Status = Invalid;
+                       Nodes(i).TxMCB.State = Invalid;
                        %Update Both throughput counter
                        etecount = etecount + 1;
                        ltlcount = ltlcount + 1;
@@ -444,17 +435,14 @@
                        mypkt.Tsrc = mypkt.Tdes;
                        mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
                        
+                       Nodes(i).TxMCB.State = Invalid;
+%                       mypkt.Status = Trans;
+                       
                        %Sien: Assign the proper queue
-                       MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
-                       if (MoreCap > 0)
-                           len = Nodes(mypkt.Tsrc).McFQ.len;
-                           Nodes(mypkt.Tsrc).McFQ.Pkts(len+1)=mypkt;
-                           Nodes(mypkt.Tsrc).McFQ.len = len + 1;
-                       else
-                           len = Nodes(mypkt.Tsrc).LcFQ.len;
-                           Nodes(mypkt.Tsrc).LcFQ.Pkts(len+1)=mypkt;
-                           Nodes(mypkt.Tsrc).LcFQ.len = len + 1;                               
-                       end
+                       len = Nodes(mypkt.Tsrc).RxBuf.len+1;
+                       Nodes(mypkt.Tsrc).RxBuf.Pkts(len) = mypkt;
+                       Nodes(mypkt.Tsrc).RxBuf.len = len;
+                       
                        %Update Link to Link throughput
                        ltlcount = ltlcount + 1;
                    end %End of Case 3 
@@ -464,10 +452,10 @@
                         Links(Nodes(i).TxMCB.Tsrc, Nodes(i).TxMCB.Tdes));
                                                                                                                  
                    if (uni_err == -1 && Nodes(i).TxMCB.Rtr > Rmax) 
-                        Nodes(i).TxMCB.Status = Invalid;
+                        Nodes(i).TxMCB.State = Invalid;
                        % delete packet
                    elseif (uni_err ~= -1 && Nodes(i).TxMCB.Tdes == Nodes(i).TxMCB.Des)    
-                       Nodes(i).TxMCB.Status = Invalid;
+                       Nodes(i).TxMCB.State = Invalid;
                        %Update ETE and LTL throughput
                        etecount = etecount + 1;
                        ltlcount = ltlcount + 1;
@@ -477,17 +465,14 @@
                        RouteDes = route(mypkt.Tsrc, mypkt.Des, Links);
                        mypkt.Tdes = RouteDes(2);
                        
+                       Nodes(i).TxMCB.State = Invalid;
+%                       mypkt.Status = Trans;
+                       
                        %Sien: Assign the proper queue
-                       MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
-                       if (MoreCap > 0)
-                           len = Nodes(mypkt.Tsrc).McFQ.len;
-                           Nodes(mypkt.Tsrc).McFQ.Pkts(len+1)=mypkt;
-                           Nodes(mypkt.Tsrc).McFQ.len = len + 1;
-                       else
-                           len = Nodes(mypkt.Tsrc).LcFQ.len;
-                           Nodes(mypkt.Tsrc).LcFQ.Pkts(len+1)=mypkt;
-                           Nodes(mypkt.Tsrc).LcFQ.len = len + 1;                               
-                       end
+                       len = Nodes(mypkt.Tsrc).RxBuf.len+1;
+                       Nodes(mypkt.Tsrc).RxBuf.Pkts(1) = mypkt;
+                       Nodes(mypkt.Tsrc).RxBuf.len = len;
+                       
                        %increment link to link throughput
                        ltlcount = ltlcount + 1;
                    end %End of Case 3 
@@ -499,11 +484,11 @@
 
                      if (uni_err == -1 && Nodes(i).TxLCB.Rtr > Rmax) %Reach Max retry
                             % delete packet == set the packet to invalid 
-                            Nodes(i).TxLCB.Status = Invalid;
+                            Nodes(i).TxLCB.State = Invalid;
                             %No need to deal with the case of retry < max, since 
                             %Retransmission will occur after back-off
                      elseif (uni_err ~= -1 && Nodes(i).TxLCB.Tdes == Nodes(i).TxLCB.Des) 
-                            Nodes(i).TxLCB.Status = Invalid;
+                            Nodes(i).TxLCB.State = Invalid;
                             %Update ETE LTL throughput
                             etecount = etecount + 1;
                             ltlcount = ltlcount + 1;
@@ -512,24 +497,19 @@
                             mypkt.Tsrc = mypkt.Tdes;
                             RouteDes = route(mypkt.Tsrc, mypkt.Des, Links);
                             mypkt.Tdes = RouteDes(2);
-                            % now how do we "assign" this packet to the
-                            % right Tx queue on the receiving node?
-                           
+
+                            
+                            Nodes(i).TxLCB.State = Invalid;
+%                            mypkt.Status = Trans;
+                            
                             %Now the mypkt.Tsrc is the formal reciver Node
                             %ID
-                            %Check if the link the MC or LC
-                            MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
-                            if (MoreCap > 0)
-                                len = Nodes(mypkt.Tsrc).McFQ.len;
-                                Nodes(mypkt.Tsrc).McFQ.Pkts(len+1)=mypkt;
-                                Nodes(mypkt.Tsrc).McFQ.len = len + 1;
-                            else
-                                len = Nodes(mypkt.Tsrc).LcFQ.len;
-                                Nodes(mypkt.Tsrc).LcFQ.Pkts(len+1)=mypkt;
-                                Nodes(mypkt.Tsrc).LcFQ.len = len + 1;                               
-                            end 
-                           %Increment Link to Link                           
-                           ltlcount = ltlcount + 1;
+                            len = Nodes(mypkt.Tsrc).RxBuf.len+1;
+                            Nodes(mypkt.Tsrc).RxBuf.Pkts(1) = mypkt;
+                            Nodes(mypkt.Tsrc).RxBuf.len = len;
+                                                                                   
+                            %Increment Link to Link                           
+                            ltlcount = ltlcount + 1;
                       end
                 %Sien: all cases should be taken care, no need for else                                           
                 %else 
@@ -544,7 +524,24 @@
         % End throughput counter. Else, increment Link Throughput counter. 
         % Expire packets that have collided > max retries
         
-        
+        %Post Processing the successfully received packet
+        for i=1:Mnum
+            while (Nodes(i).RxBuf.len > 0)
+                mypkt = Nodes(i).RxBuf.Pkts(Nodes(i).RxBuf.len);
+                MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
+                if (MoreCap > 0)
+                    len = Nodes(i).McFQ.len;
+                    Nodes(i).McFQ.Pkts(len+1)=mypkt;
+                    Nodes(i).McFQ.len = len + 1;
+                else
+                    len = Nodes(i).LcFQ.len;
+                    Nodes(i).LcFQ.Pkts(len+1)=mypkt;
+                    Nodes(i).LcFQ.len = len + 1;                               
+                end
+                clear Nodes(i).RxBuf.Pkts(Nodes(i).RxBuf.len) mypkt;
+                Nodes(i).RxBuf.len = Nodes(i).RxBuf.len - 1;
+            end
+        end   
         
      end % for idxT = 1:Nt
      % Performance Graph code goes here
