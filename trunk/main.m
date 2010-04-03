@@ -102,10 +102,11 @@
  BackOff = 2;
  
  % Events that lead to a change of Node States
- global NewPkt Collision TxSuccess
+ global NewPkt Collision TxSuccess DropPkt
  NewPkt = 1;
  Collision = 2;
  TxSuccess = 3;
+ DropPkt = 4;
  
  % Node Structure Initilization
  % @ ID: Node ID
