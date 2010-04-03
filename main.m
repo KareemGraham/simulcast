@@ -41,7 +41,7 @@
  Dmax   = 381;
  
  % Simulation Parameters
- Nt     = 300;     % Number of time slots simulated for each topology
+ Nt     = 10;     % Number of time slots simulated for each topology
  Ns     = 1;        % Number of topology simulations
  dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
@@ -278,8 +278,10 @@
         %Find out the activity in each node
         for i=1:Mnum
             
-            if Nodes(i).BoS > idxT 
-                continue; %Skip collision in case the Node is in backoff 
+            if (Nodes(i).State ~= Ready2Tx)
+                % Skip collision check in case the Node is in Backoff or NoPkt
+                % state. Consider only the nodes in Ready2Tx State
+                continue;
             end   
             
             if (Nodes(i).TxMCB.State == Ready)
@@ -297,38 +299,22 @@
         MCPC = collision_detect(Links,MCPactivity);
         LCPC = collision_detect(Links,LCPactivity);
         
-        %Change the packets status when collision occurs and set the node
-        %to back-off according to the maximum # of retry between MC packet 
-        %retry count and LC packet retry count
+        %Change the node and packets status when collision occurs and set
+        %the node state to collision right now so that it does not
+        %participate in the tx process. We would take care of dropping
+        %packet at the end when we process the states of all the nodes at
+        %once. 
         for i=1:Mnum
-            
-           if Nodes(i).BoS > idxT 
-                continue; %Skip collision in case the Node is in backoff 
-           end   
-           
-           collision = 0;
            if (MCPC(i) == 1)
                Nodes(i).TxMCB.State = Colli;
-               Nodes(i).TxMCB.Rtr=Nodes(i).TxMCB.Rtr+1;
-               collision = Nodes(i).TxMCB.Rtr;
-           end
-           if (LCPC(i) == 1)
-               Nodes(i).TxLCB.State = Colli;
-               Nodes(i).TxLCB.Rtr=Nodes(i).TxLCB.Rtr+1;
-               
-               if (Nodes(i).TxLCB.Rtr > collision) 
-                    collision = Nodes(i).TxLCB.Rtr;
-               end     
+               [Nodes(i)] = update_node_state(Nodes(i), Collision);
            end
            
-           if (collision > 0)
-                Nodes(i).BoS = ceil(2^(collision)*rand(1)) + idxT;  
+           if (LCPC(i) == 1)
+               Nodes(i).TxLCB.State = Colli;
+               [Nodes(i)] = update_node_state(Nodes(i), Collision);
            end
         end
-        
-        % Evaluate collisions and schedule retransmission slot
-        % ceil(2^(num. of collisions)*rand(1)) is the binary exponential
-        % backoff delay in # of slots
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Transmit any packets that did not experience collision
@@ -339,7 +325,7 @@
         % Once I know that, 
         
         for i=1:Mnum
-            if Nodes(i).BoS <= idxT % backoff slot not in the future
+            if (Nodes(i).State == Ready2Tx) % backoff slot not in the future
                 if (Nodes(i).TxMCB.State == Ready && Nodes(i).TxLCB.State == Ready) %Sien: Shall we check the retry here?
                    % simulcast
                    % junk is a variable to hold results I don't care about,
@@ -356,8 +342,9 @@
                    if (Nodes(i).TxMCB.Tdes == Nodes(i).TxLCB.Tdes) 
                        %Sien: packet only has error when err == -1
                        if (mcbm_err == -1 && Nodes(i).TxLCB.Rtr > Rmax) %Reach Max retry
-                           % delete packet == set the packet to invalid 
-                           Nodes(i).TxLCB.State = Invalid;
+                           % delete packet
+                           Nodes(i).TxLCB = Pkt;
+                           [Nodes(i)] = update_node_state(Nodes(i), DropPkt);
                            %No need to deal with the case of retry < max, since 
                            %Retransmission will occur after back-off
                        elseif (mcbm_err ~= -1 && Nodes(i).TxLCB.Tdes == Nodes(i).TxLCB.Des)
@@ -547,7 +534,11 @@
                 len = Nodes(i).RxBuf.len - 1;
                 Nodes(i).RxBuf.len = len;
             end
-        end   
+        end
+        
+         % Evaluate collisions and schedule retransmission slot
+        % ceil(2^(num. of collisions)*rand(1)) is the binary exponential
+        % backoff delay in # of slots
         
      end % for idxT = 1:Nt
      % Performance Graph code goes here
