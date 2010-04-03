@@ -529,7 +529,9 @@
             while (Nodes(i).RxBuf.len > 0)
                 mypkt = Nodes(i).RxBuf.Pkts(Nodes(i).RxBuf.len);
                 if(mypkt.State == Invalid)
-                    continue;
+                len = Nodes(i).RxBuf.len - 1;
+                Nodes(i).RxBuf.len = len;
+                continue;
                 end
                 MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
                 if (MoreCap > 0)
