@@ -1,10 +1,10 @@
 function [  ] = drawfigure( maxx, maxy, node,links, dist, slot)
 %DRAWFIGURE Summary of this function goes here
 %   Detailed explanation goes here
-
+close all
 
     % make background white, run only once
-if (slot == 0)    
+%if (slot == 0)    
     colordef none,  whitebg
     %figure('Visible', 'off');
     figure;
@@ -12,11 +12,11 @@ if (slot == 0)
     hold on;
     box on;
     plot(node(:, 1), node(:, 2), 'k.', 'MarkerSize', 8);    
-    title([dist ' Network topology']);
-else
-    plot(node(:, 1), node(:, 2), 'k.', 'MarkerSize', 8);    
+%    title([dist ' Network topology']);
+%else
+%    plot(node(:, 1), node(:, 2), 'k.', 'MarkerSize', 8);    
     title([dist ' Simulcast Ad-hoc Network slot= ' num2str(slot)]);
-end
+%end
     
     
     xlabel('X Distance (meters)');

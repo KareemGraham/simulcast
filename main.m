@@ -140,7 +140,7 @@
      % node
      Nodes(1:Mnum) = Node; % Clear all the nodes when simulating new topology
      [nodeXY, Links, Mh] = topo(Mnum, Xmax, Ymax, Sig, Theta, dF);
-     
+          
      % Node Initialization 
      for idxNode = 1:Mnum
          Nodes(idxNode).ID  = idxNode;
@@ -150,6 +150,13 @@
          Nodes(idxNode).State = NoPkt; % None of the nodes has pkts initially
      end
 
+     %Sien: Throughput counter variable
+     pktcount = 0; %total # of packets arrive (Being generated) 
+     txcount = 0; %total # of transmission attempted
+     etecount = 0;%total # of packets reachs destination 
+     ltlcount = 0;%total # of packets are successfully received
+     
+     
      for idxT = 1:Nt
 
         for SrcNode = 1:Mnum
@@ -184,6 +191,9 @@
                     Nodes(SrcNode).LcLQ.len = len + 1;
                 end
             end
+            
+            % Count total # of packets being generated
+            pktcount = pktcount + NumPkts; 
         end
 
 
@@ -266,11 +276,19 @@
 
         %Find out the activity in each node
         for i=1:Mnum
+            
+            if Nodes(i).BoS > idxT 
+                continue; %Skip collision in case the Node is in backoff 
+            end   
+            
             if (Nodes(i).TxMCB.State == Ready)
                 MCPactivity(i) = Nodes(i).TxMCB.Tdes;
+                % If the node is not in backoff
+                txcount = txcount + 1;  
             end
             if (Nodes(i).TxLCB.State == Ready)
                 LCPactivity(i) = Nodes(i).TxLCB.Tdes;
+                txcount = txcount + 1;
             end
         end    
 
@@ -293,7 +311,7 @@
                Nodes(i).TxMCB.Rtr=Nodes(i).TxMCB.Rtr+1;
                collision = Nodes(i).TxMCB.Rtr;
            end
-           if (LCPC == 1)
+           if (LCPC(i) == 1)
                Nodes(i).TxLCB.State = Colli;
                Nodes(i).TxLCB.Rtr=Nodes(i).TxLCB.Rtr+1;
                
@@ -346,6 +364,8 @@
                            %destination, delete the packet and update the
                            %both end to end and link to link throughput counters.               
                            Nodes(i).TxLCB.Status = Invalid;%
+                           etecount = etecount + 1;
+                           ltlcount = ltlcount + 1;
                        elseif (mcbm_err ~= -1) % base packet to MC node received
                            
                            mypkt = Nodes(i).TxLCB;
@@ -367,7 +387,9 @@
                                len = Nodes(mypkt.Tsrc).LcFQ.len;
                                Nodes(mypkt.Tsrc).LcFQ.Pkts(len+1)=mypkt;
                                Nodes(mypkt.Tsrc).LcFQ.len = len + 1;                               
-                           end                                                                                
+                           end
+                           %increment Link to Link throughput
+                           ltlcount = ltlcount + 1;
                        end %End of Case 1
                        
                    else %Case 2: for the base mesage is going to LC node                                                    
@@ -380,6 +402,8 @@
                             Nodes(i).TxLCB.Status = Invalid;
                             %Need to increment End-to-End and Link-to-Link throughput
                             %counter
+                            etecount = etecount + 1;
+                            ltlcount = ltlcount + 1;
                         elseif (lcbm_err ~= -1) % base packet to MC node received                          
                             mypkt = Nodes(i).TxLCB;
                             mypkt.Tsrc = mypkt.Tdes;
@@ -400,7 +424,9 @@
                                 len = Nodes(mypkt.Tsrc).LcFQ.len;
                                 Nodes(mypkt.Tsrc).LcFQ.Pkts(len+1)=mypkt;
                                 Nodes(mypkt.Tsrc).LcFQ.len = len + 1;                               
-                            end                                                                               
+                            end
+
+                            ltlcount = ltlcount + 1;
                         end
                    end %End of Case 2                        
                    %Case 3: to check the additional message for the MC node                   
@@ -410,6 +436,8 @@
                    elseif (mcam_err ~= -1 && Nodes(i).TxMCB.Tdes == Nodes(i).TxMCB.Des)
                        Nodes(i).TxMCB.Status = Invalid;
                        %Update Both throughput counter
+                       etecount = etecount + 1;
+                       ltlcount = ltlcount + 1;
                    elseif (mcam_err == -1) % add packet to receiving node's queue
                        mypkt = Nodes(i).TxMCB;
                        mypkt.Tsrc = mypkt.Tdes;
@@ -425,7 +453,9 @@
                            len = Nodes(mypkt.Tsrc).LcFQ.len;
                            Nodes(mypkt.Tsrc).LcFQ.Pkts(len+1)=mypkt;
                            Nodes(mypkt.Tsrc).LcFQ.len = len + 1;                               
-                       end                       
+                       end
+                       %Update Link to Link throughput
+                       ltlcount = ltlcount + 1;
                    end %End of Case 3 
                                       
                 elseif (Nodes(i).TxMCB.State == Ready) % unicast MC packet
@@ -438,6 +468,8 @@
                    elseif (uni_err ~= -1 && Nodes(i).TxMCB.Tdes == Nodes(i).TxMCB.Des)    
                        Nodes(i).TxMCB.Status = Invalid;
                        %Update ETE and LTL throughput
+                       etecount = etecount + 1;
+                       ltlcount = ltlcount + 1;
                    elseif (uni_err ~= -1) % unicast packet received
                        mypkt = Nodes(i).TxMCB;
                        mypkt.Tsrc = mypkt.Tdes;
@@ -454,7 +486,9 @@
                            len = Nodes(mypkt.Tsrc).LcFQ.len;
                            Nodes(mypkt.Tsrc).LcFQ.Pkts(len+1)=mypkt;
                            Nodes(mypkt.Tsrc).LcFQ.len = len + 1;                               
-                       end                       
+                       end
+                       %increment link to link throughput
+                       ltlcount = ltlcount + 1;
                    end %End of Case 3 
                                                          
                 elseif (Nodes(i).TxLCB.State == Ready) % unicast LC packet
@@ -470,7 +504,9 @@
                      elseif (uni_err ~= -1 && Nodes(i).TxLCB.Tdes == Nodes(i).TxLCB.Des) 
                             Nodes(i).TxLCB.Status = Invalid;
                             %Update ETE LTL throughput
-                     else % base packet to MC node received                          
+                            etecount = etecount + 1;
+                            ltlcount = ltlcount + 1;
+                     elseif (uni_err ~= -1) % base packet to MC node received                          
                             mypkt = Nodes(i).TxLCB;
                             mypkt.Tsrc = mypkt.Tdes;
                             RouteDes = route(mypkt.Tsrc, mypkt.Des, Links);
@@ -481,20 +517,22 @@
                             %Now the mypkt.Tsrc is the formal reciver Node
                             %ID
                             %Check if the link the MC or LC
-                        MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
-                         if (MoreCap > 0)
+                            MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
+                            if (MoreCap > 0)
                                 len = Nodes(mypkt.Tsrc).McFQ.len;
                                 Nodes(mypkt.Tsrc).McFQ.Pkts(len+1)=mypkt;
                                 Nodes(mypkt.Tsrc).McFQ.len = len + 1;
-                         else
+                            else
                                 len = Nodes(mypkt.Tsrc).LcFQ.len;
                                 Nodes(mypkt.Tsrc).LcFQ.Pkts(len+1)=mypkt;
                                 Nodes(mypkt.Tsrc).LcFQ.len = len + 1;                               
-                         end                                                                               
+                            end 
+                           %Increment Link to Link                           
+                           ltlcount = ltlcount + 1;
                       end
-                                                           
-                else
-                    ; % not in backoff and nothing to send
+                %Sien: all cases should be taken care, no need for else                                           
+                %else 
+                %    ; % not in backoff and nothing to send
                 end
             end
         end
@@ -504,6 +542,9 @@
         % If Pkt.Des = Pkt.Tdes, destination reached. Increment the End to
         % End throughput counter. Else, increment Link Throughput counter. 
         % Expire packets that have collided > max retries
+        
+        
+        
      end % for idxT = 1:Nt
      % Performance Graph code goes here
  end % for idxS = 1:Ns

@@ -42,7 +42,7 @@ switch(node.State)
                 else
                     disp('Unexpected Size of CW');             
                     dbstop; % stop the execution for debugging. 
-                
+                end
             case Collision
                 
                 
