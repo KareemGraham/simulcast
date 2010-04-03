@@ -41,9 +41,9 @@ switch(node.State)
                     end
                 else
                     disp('Unexpected Size of CW');             
-                    dbstop; % stop the execution for debugging
+%                     dbstop; % stop the execution for debugging
                 end
-                end
+                
             case Collision
                 
                 
@@ -53,9 +53,7 @@ switch(node.State)
             
             otherwise
                 disp('Suprious Event');
-                dbstop; % stop the execution for debugging. 
-                
-                
+%                 dbstop; % stop the execution for debugging. 
         end %switch(event) ends here
     %%%%%%%%%%%%%%% End of node.State = NewPkt %%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
@@ -74,19 +72,20 @@ switch(node.State)
                 % not change the state of the node. 
                 
                 node.State = Ready2Tx;
-                if (node.BoS != idxT)
+                if (node.BoS ~= idxT)
                     disp('Node State Ready2Tx but BoS not idxT!');             
-                    dbstop; % stop the execution for debugging
-                
+%                     dbstop; % stop the execution for debugging
+                end
             case Collision
                 
             case TxSuccess
             
             case DropPkt
+                % The node tried transmitting but 
                 
             otherwise
                 disp('Suprious Event');
-                dbstop; % stop the execution for debugging. 
+%                 dbstop; % stop the execution for debugging. 
                 
         end %switch(event) ends here
     
@@ -115,7 +114,7 @@ switch(node.State)
                 
             otherwise
                 disp('Suprious Event');
-                dbstop; % stop the execution for debugging. 
+%                 dbstop; % stop the execution for debugging. 
                 
                 
         end %switch(event) ends here
