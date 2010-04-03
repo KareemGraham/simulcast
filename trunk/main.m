@@ -41,7 +41,7 @@
  Dmax   = 381;
  
  % Simulation Parameters
- Nt     = 150;     % Number of time slots simulated for each topology
+ Nt     = 300;     % Number of time slots simulated for each topology
  Ns     = 1;        % Number of topology simulations
  dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
@@ -528,6 +528,9 @@
         for i=1:Mnum
             while (Nodes(i).RxBuf.len > 0)
                 mypkt = Nodes(i).RxBuf.Pkts(Nodes(i).RxBuf.len);
+                if(mypkt.State == Invalid)
+                    continue;
+                end
                 MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
                 if (MoreCap > 0)
                     len = Nodes(i).McFQ.len;
@@ -539,7 +542,8 @@
                     Nodes(i).LcFQ.len = len + 1;                               
                 end
                 clear Nodes(i).RxBuf.Pkts(Nodes(i).RxBuf.len) mypkt;
-                Nodes(i).RxBuf.len = Nodes(i).RxBuf.len - 1;
+                len = Nodes(i).RxBuf.len - 1;
+                Nodes(i).RxBuf.len = len;
             end
         end   
         
