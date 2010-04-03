@@ -41,7 +41,7 @@
  Dmax   = 381;
  
  % Simulation Parameters
- Nt     = 10;     % Number of time slots simulated for each topology
+ Nt     = 150;     % Number of time slots simulated for each topology
  Ns     = 1;        % Number of topology simulations
  dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
@@ -240,18 +240,18 @@
                 % Since TransPkt > 0, at least one of these queues did have
                 % packet. Thus, we must run the Node State Machine to
                 % update the state of the this node. 
-%                [Nodes(i)] = update_node_state(Nodes(i), NewPkt); 
+                [Nodes(i)] = update_node_state(Nodes(i), NewPkt); 
             end
              
              if(Nodes(i).TxMCB.State == Invalid) % MCL Rider Buffer Empty
                  % Check for MCL Rider Local Packet Queue First
                 if(Nodes(i).McLQ.len > 0 && Nodes(i).McLQ.Pkts(1).State == Ready)
                     [Nodes(i).TxMCB, Nodes(i).McLQ] = schd_pkt(Nodes(i).TxMCB, Nodes(i).McLQ);
-%                    [Nodes(i)] = update_node_state(Nodes(i), NewPkt); % Nodes(i).State must be BackOff or Ready
+                    [Nodes(i)] = update_node_state(Nodes(i), NewPkt); % Nodes(i).State must be BackOff or Ready
                     % Try scheduling a MCL Rider Fwd Packet next
                 elseif(Nodes(i).McFQ.len > 0 && Nodes(i).McFQ.Pkts(1).State == Ready)
                     [Nodes(i).TxMCB, Nodes(i).McFQ] = schd_pkt(Nodes(i).TxMCB, Nodes(i).McFQ);
-%                    [Nodes(i)] = update_node_state(Nodes(i), NewPkt); % Nodes(i).State must be BackOff or Ready
+                    [Nodes(i)] = update_node_state(Nodes(i), NewPkt); % Nodes(i).State must be BackOff or Ready
                 end
             end
         end
@@ -362,9 +362,7 @@
                            
                            %Set the Tx buffer to empty                           
                            Nodes(i).TxLCB.State = Invalid;
-%                           %Set the Rx packet to be received
-%                           mypkt.Status = Trans;
-                                                      
+                                                    
                            %Now the mypkt.Tsrc is the formal reciver Node
                            %ID
                            len = Nodes(mypkt.Tsrc).RxBuf.len+1;
@@ -395,7 +393,6 @@
                             mypkt.Tdes = RouteDes(2);
                                                         
                             Nodes(i).TxLCB.State = Invalid;
-%                            mypkt.Status = Trans;
                             % now how do we "assign" this packet to the
                             % right Tx queue on the receiving node?
                            
@@ -423,7 +420,6 @@
                        mypkt.Tdes = route(mypkt.Tsrc, mypkt.Des, Links);
                        
                        Nodes(i).TxMCB.State = Invalid;
-%                       mypkt.Status = Trans;
                        
                        %Sien: Assign the proper queue
                        len = Nodes(mypkt.Tsrc).RxBuf.len+1;
@@ -453,11 +449,10 @@
                        mypkt.Tdes = RouteDes(2);
                        
                        Nodes(i).TxMCB.State = Invalid;
-%                       mypkt.Status = Trans;
                        
                        %Sien: Assign the proper queue
                        len = Nodes(mypkt.Tsrc).RxBuf.len+1;
-                       Nodes(mypkt.Tsrc).RxBuf.Pkts(1) = mypkt;
+                       Nodes(mypkt.Tsrc).RxBuf.Pkts(len) = mypkt;
                        Nodes(mypkt.Tsrc).RxBuf.len = len;
                        
                        %increment link to link throughput
@@ -487,12 +482,11 @@
 
                             
                             Nodes(i).TxLCB.State = Invalid;
-%                            mypkt.Status = Trans;
                             
                             %Now the mypkt.Tsrc is the formal reciver Node
                             %ID
                             len = Nodes(mypkt.Tsrc).RxBuf.len+1;
-                            Nodes(mypkt.Tsrc).RxBuf.Pkts(1) = mypkt;
+                            Nodes(mypkt.Tsrc).RxBuf.Pkts(len) = mypkt;
                             Nodes(mypkt.Tsrc).RxBuf.len = len;
                                                                                    
                             %Increment Link to Link                           
@@ -515,11 +509,11 @@
         for i=1:Mnum
             while (Nodes(i).RxBuf.len > 0)
                 mypkt = Nodes(i).RxBuf.Pkts(Nodes(i).RxBuf.len);
-                if(mypkt.State == Invalid)
-                len = Nodes(i).RxBuf.len - 1;
-                Nodes(i).RxBuf.len = len;
-                continue;
-                end
+            %    if(mypkt.State == Invalid)
+            %        len = Nodes(i).RxBuf.len - 1;
+            %        Nodes(i).RxBuf.len = len;
+            %        continue;
+            %    end
                 MoreCap = Links(mypkt.Tsrc,mypkt.Tdes);
                 if (MoreCap > 0)
                     len = Nodes(i).McFQ.len;
@@ -530,7 +524,7 @@
                     Nodes(i).LcFQ.Pkts(len+1)=mypkt;
                     Nodes(i).LcFQ.len = len + 1;                               
                 end
-                clear Nodes(i).RxBuf.Pkts(Nodes(i).RxBuf.len) mypkt;
+                %clear Nodes(i).RxBuf.Pkts(Nodes(i).RxBuf.len) mypkt;
                 len = Nodes(i).RxBuf.len - 1;
                 Nodes(i).RxBuf.len = len;
             end
