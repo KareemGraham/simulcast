@@ -17,7 +17,7 @@ for x = 1:length(tx_node)
         end
     end
     %check for case that a receiving node is also transmitting
-    rxtx = find(activity == tx_node(x))
+    rxtx = find(activity == tx_node(x));
     if(rxtx)
         collisions(rxtx) = collisions(rxtx)+1;
     end
