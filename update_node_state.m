@@ -77,6 +77,24 @@ switch(node.State)
 %                     dbstop; % stop the execution for debugging
                 end
             case Collision
+                % This case happens when node was ready to tx in the same
+                % slot but experienced a collision. We shall simply put the
+                % node into backoff state and increase the contention
+                % window length. The check if the packet has increased the
+                % max no. of retries is done later at the end of the loop
+                % in main program during node state update. 
+                node.State = BackOff;
+                % Any of the packets may have suffered collision. We must
+                % check the both.           
+                if (node.TxMCB.State == Colli)
+                    CW = node.TxMCB.Rtr + 1;
+                    node.TxMCB.Rtr = CW;
+                    node.BoS = randi([1,2^CW]) + idxT; % Slot increment from 0 or 1? 
+                elseif (node.TxLCB.State == Colli)
+                    CW = node.TxLCB.Rtr + 1;
+                    node.TxLCB.Rtr = CW;
+                    node.BoS = randi([1,2^CW]) + idxT; % Slot increment from 0 or 1? 
+                end
                 
             case TxSuccess
             
