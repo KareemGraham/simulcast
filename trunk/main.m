@@ -305,12 +305,12 @@
         %packet at the end when we process the states of all the nodes at
         %once. 
         for i=1:Mnum
-           if (MCPC(i) == 1)
+           if (MCPC(i) > 0)
                Nodes(i).TxMCB.State = Colli;
                [Nodes(i)] = update_node_state(Nodes(i), Collision);
            end
            
-           if (LCPC(i) == 1)
+           if (LCPC(i) > 0)
                Nodes(i).TxLCB.State = Colli;
                [Nodes(i)] = update_node_state(Nodes(i), Collision);
            end
