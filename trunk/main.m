@@ -42,7 +42,7 @@
  
  % Simulation Parameters
  Nt     = 150;     % Number of time slots simulated for each topology
- Ns     = 1;        % Number of topology simulations
+ Ns     = 2;        % Number of topology simulations
  dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
  % NP is calculated as the attempt rate times number of slots. This should
@@ -104,12 +104,11 @@
  BackOff = 2;
  
  % Events that lead to a change of Node States
- global NewPkt Collision TxSuccess DropPkt OneSlot
+ global NewPkt Collision TxSuccess OneSlot
  NewPkt = 1;
  Collision = 2;
  TxSuccess = 3;
- DropPkt = 4;
- OneSlot = 5;
+ OneSlot = 4;
   
  % Node Structure Initilization
  % @ ID: Node ID
@@ -306,13 +305,10 @@
            if (MCPC(i) > 0)
                txcount = txcount + 1;
                Nodes(i).TxMCB.State = Colli;
-               Nodes(i).LinkCount = Nodes(i).LinkCount + 1;
-               
            end
            if (LCPC(i) > 0)
                txcount = txcount + 1;
                Nodes(i).TxLCB.State = Colli;
-               Nodes(i).LinkCount = Nodes(i).LinkCount + 1;
            end
         end
         
@@ -328,55 +324,53 @@
                        Links(Nodes(i).TxMCB.Tsrc, Nodes(i).TxMCB.Tdes),...
                        Links(Nodes(i).TxLCB.Tsrc, Nodes(i).TxLCB.Tdes),...
                        Theta);
-                       switch (lcbm_err) % Check base message tx status
-                           case (-1) % Tx failure due to > 10 errors
-                               % Just flag the packet as per failure or
-                               % success
-                               Nodes(i).TxLCB.State = TxF;
-                           otherwise
-                               Nodes(i).TxLCB.State = TxS;
-                       end 
-                       
-                       switch (mcam_err) % Check additional message tx status
-                           case (-1) % Tx failure due to > 10 errors
-                               Nodes(i).TxMCB.State = TxF;
-                           otherwise
-                               Nodes(i).TxMCB.State = TxS;
-                       end
-                       
-                       % Unicast on Less Capable Link
+                   txcount = txcount + 2; % Tx attempt of two packets
+                   
+                   switch (lcbm_err) % Check base message tx status
+                       case (-1) % Tx failure due to > 10 errors
+                           % Just flag the packet as per failure or success
+                           Nodes(i).TxLCB.State = TxF;
+                       otherwise
+                           Nodes(i).TxLCB.State = TxS;
+                           ltlcount = ltlcount + 1; % Increment global counter
+                   end
+                   
+                   switch (mcam_err) % Check additional message tx status 
+                       case (-1) % Tx failure due to > 10 errors 
+                           Nodes(i).TxMCB.State = TxF; 
+                       otherwise
+                           Nodes(i).TxMCB.State = TxS; 
+                           ltlcount = ltlcount + 1; % Increment global counter
+                   end
+                   
+                   % Unicast on Less Capable Link
                 elseif (Nodes(i).TxLCB.State == Ready)
                     [~,uni_err] = unicast_txrx(Nodes(i).TxLCB.Data,...
                         Links(Nodes(i).TxLCB.Tsrc, Nodes(i).TxLCB.Tdes));
-                       switch (uni_err)
-                           case (-1) % Tx failure due to > 10 errors
-                               % Just flag the packet as per failure or
-                               % success
-                               Nodes(i).TxLCB.State = TxF;
-                           otherwise
-                               Nodes(i).TxLCB.State = TxS;
-                       end
-                       
-                       % Unicast on More Capable Link in the absence of other
-                       % packet to tx 
+                    txcount = txcount + 1; % Tx attempt of one packet
+                    switch (uni_err) 
+                        case (-1) % Tx failure due to > 10 errors 
+                            % Just flag the packet for failure or success 
+                            Nodes(i).TxLCB.State = TxF;
+                        otherwise
+                            Nodes(i).TxLCB.State = TxS;
+                            ltlcount = ltlcount + 1; % Increment global counter
+                    end
+                    
+                    % Unicast on More Capable Link in the absence of other
+                    % packet to tx 
                 elseif (Nodes(i).TxMCB.State == Ready)
                     [~,uni_err] = unicast_txrx(Nodes(i).TxMCB.Data,...
                         Links(Nodes(i).TxMCB.Tsrc, Nodes(i).TxMCB.Tdes));
-                       switch (uni_err)
-                           case (-1) % Tx failure due to > 10 errors
-                               % Just flag the packet as per error or
-                               % success
-                               Nodes(i).TxMCB.State = TxF;
-                           otherwise
-                               Nodes(i).TxMCB.State = TxS;
-                       end
-                       % We should never reach in 'else' condition as if
-                       % the node did not have any ready packet, it should
-                       % not have reached in transmission loop
-                else
-                    disp('Error: Node must not be "Ready2Tx" if no pkt to tx!');
-%                     dbstop; % stop the execution for debugging
-
+                    txcount = txcount + 1; % Tx attempt of one packet
+                    switch (uni_err)
+                        case (-1) % Tx failure due to > 10 errors 
+                            % Just flag the packet as per error or success
+                            Nodes(i).TxMCB.State = TxF;
+                        otherwise
+                            Nodes(i).TxMCB.State = TxS;
+                            ltlcount = ltlcount + 1; % Increment global counter
+                    end
                 end % End of processing ready to Tx Packet buffers
             end % End of processing Ready2Tx Nodes
         end % End of node counter
@@ -398,6 +392,7 @@
              case TxS % MCB packet Transmission Successful
                  if (Nodes(i).TxMCB.Des == Nodes(i).TxMCB.Tdes) % Packet reached final destination
                      [Nodes(i),Nodes(i).TxMCB] = handle_final_des_pkt(Nodes(i));
+                     etecount = etecount + 1;
                  else % Packet needs to hop to next destination on the route
                  % Get the new route from the function
                  RouteDes = route(Nodes(i).TxMCB.Tdes, Nodes(i).TxMCB.Des, Links);
@@ -440,16 +435,16 @@
      for i = 1:Mnum
          switch(Nodes(i).State)
              case Ready2Tx
-                 if (Nodes(i).TxMCB == Invalid && Nodes(i).TxLCB == Invalid)
+                 if (Nodes(i).TxMCB.State == Invalid && Nodes(i).TxLCB.State == Invalid)
                      % No more packet to transmit. Move to NoPkt. 
                      Nodes(i) = update_node_state(Nodes(i), TxSuccess);
-                 elseif (Nodes(i).TxMCB == Invalid && Nodes(i).TxLCB == Ready)
+                 elseif (Nodes(i).TxMCB.State == Invalid && Nodes(i).TxLCB.State == Ready)
                      % Indicates a collision. Move to BackOff State
                      Nodes(i) = update_node_state(Nodes(i), Collision);
-                 elseif (Nodes(i).TxMCB == Ready && Nodes(i).TxLCB == Invalid)
+                 elseif (Nodes(i).TxMCB.State == Ready && Nodes(i).TxLCB.State == Invalid)
                      % Indicates a collision on MCB. Move to BackOff State
                      Nodes(i) = update_node_state(Nodes(i), Collision);
-                 elseif (Nodes(i).TxMCB == Ready && Nodes(i).TxLCB == Ready)
+                 elseif (Nodes(i).TxMCB.State == Ready && Nodes(i).TxLCB.State == Ready)
                      Nodes(i) = update_node_state(Nodes(i), Collision);
                  else % Packet is not expected to be in any other state at this point
                      disp('Error: Packet is in unexpected state!');
@@ -459,9 +454,9 @@
                  % If node was in BackOff State, atleast one packet should
                  % be Ready. Just decrement the BoS in that case. Else
                  % there was something wrong. 
-                 if ((Nodes(i).TxMCB == Ready && Nodes(i).TxLCB == Ready)...
-                         ||(Nodes(i).TxMCB == Invalid && Nodes(i).TxLCB == Ready)...
-                         ||(Nodes(i).TxMCB == Ready && Nodes(i).TxLCB == Invalid))
+                 if ((Nodes(i).TxMCB.State == Ready && Nodes(i).TxLCB.State == Ready)...
+                         ||(Nodes(i).TxMCB.State == Invalid && Nodes(i).TxLCB.State == Ready)...
+                         ||(Nodes(i).TxMCB.State == Ready && Nodes(i).TxLCB.State == Invalid))
                      Nodes(i) = update_node_state(Nodes(i), OneSlot);
                  else
                      disp('Error: Packet is in unexpected state!');
@@ -470,7 +465,7 @@
              case NoPkt
                  % Just make sure that both the packets should be in
                  % Invalid state. Otherwise give an error. 
-                 if (Nodes(i).TxMCB ~= Invalid && Nodes(i).TxLCB ~= Invalid)
+                 if (Nodes(i).TxMCB.State ~= Invalid && Nodes(i).TxLCB.State ~= Invalid)
                      disp('Error: Packet is in unexpected state!');
 %                      dbgstop;
                  end
