@@ -40,7 +40,7 @@ switch(node.State)
                         node.State = BackOff;  
                     end
                 else
-                    disp('Unexpected Size of CW');             
+                    disp('Error: Unexpected Size of CW!');             
 %                     dbstop; % stop the execution for debugging
                 end
                 
@@ -73,16 +73,18 @@ switch(node.State)
                 
                 node.State = Ready2Tx;
                 if (node.BoS ~= idxT)
-                    disp('Node State Ready2Tx but BoS not idxT!');             
+                    disp('Error: Node State Ready2Tx but BoS not idxT!');
 %                     dbstop; % stop the execution for debugging
                 end
+                
             case Collision
                 % This case happens when node was ready to tx in the same
                 % slot but experienced a collision. We shall simply put the
-                % node into backoff state and increase the contention
+                % node into backoff state atand increase the contention
                 % window length. The check if the packet has increased the
                 % max no. of retries is done later at the end of the loop
                 % in main program during node state update. 
+                
                 node.State = BackOff;
                 % Any of the packets may have suffered collision. We must
                 % check the both.           
@@ -97,6 +99,9 @@ switch(node.State)
                 end
                 
             case TxSuccess
+                % If a packet got transmitted successfully, the NSM must
+                % check if the node still has another valid packet in other
+                % buffer. 
             
             case DropPkt
                 % The node tried transmitting but 
