@@ -104,12 +104,13 @@
  BackOff = 2;
  
  % Events that lead to a change of Node States
- global NewPkt Collision TxSuccess DropPkt
+ global NewPkt Collision TxSuccess DropPkt OneSlot
  NewPkt = 1;
  Collision = 2;
  TxSuccess = 3;
  DropPkt = 4;
- 
+ OneSlot = 5;
+  
  % Node Structure Initilization
  % @ ID: Node ID
  % @ TxMCB : More Capable Link Tx Buffer
@@ -391,6 +392,9 @@
          end
          
          switch (Nodes(i).TxMCB.State)
+             % Packet could be in one of the four states viz. TxS, TxF,
+             % Colli or Invalid. It CANNOT be in Ready or any other State. 
+             
              case TxS % MCB packet Transmission Successful
                  if (Nodes(i).TxMCB.Des == Nodes(i).TxMCB.Tdes) % Packet reached final destination
                      [Nodes(i),Nodes(i).TxMCB] = handle_final_des_pkt(Nodes(i));
@@ -401,12 +405,13 @@
                  [Nodes(i),Nodes(NextHop),Nodes(i).TxMCB] = handle_next_des_pkt(Nodes(i),Nodes(NextHop),Nodes(i).TxMCB, Links);
                  end
                  
-             case TxF % MCB Packet Transmission Failed
+             case {TxF,Colli} % MCB Packet Transmission Failed
                  [Nodes(i),Nodes(i).TxMCB] = handle_failed_pkt(Nodes(i),Nodes(i).TxMCB);
-             case Invalid % MCB Packet did not participate in Tx
-             case Colli
+             case Invalid
+                 % Packet did not participate in tx process. Do nothing. 
+                 NOP = 0;
              otherwise
-                 disp('Error: Invalid State of MCB Packet!');
+                 disp('Error: Packet is in unexpected state!');
 %                  dbgstop;
          end
           
@@ -422,12 +427,12 @@
                      [Nodes(i),Nodes(NextHop),Nodes(i).TxLCB] = handle_next_des_pkt(Nodes(i),Nodes(NextHop),Nodes(i).TxLCB, Links);
                  end
                  
-             case TxF % LCB Packet Tx Failed
+             case {TxF,Colli} % LCB Packet Tx Failed
                  [Nodes(i),Nodes(i).TxLCB] = handle_failed_pkt(Nodes(i),Nodes(i).TxLCB);
              case Invalid % LCB Packet did not participate in Tx
-             case Colli
+                 NOP = 0;
              otherwise
-                 disp('Error: Invalid State of LCB Packet!');
+                 disp('Error: Packet is in unexpected state!');
 %                  dbgstop;
          end
      end
@@ -435,10 +440,42 @@
      for i = 1:Mnum
          switch(Nodes(i).State)
              case Ready2Tx
-                 
+                 if (Nodes(i).TxMCB == Invalid && Nodes(i).TxLCB == Invalid)
+                     % No more packet to transmit. Move to NoPkt. 
+                     Nodes(i) = update_node_state(Nodes(i), TxSuccess);
+                 elseif (Nodes(i).TxMCB == Invalid && Nodes(i).TxLCB == Ready)
+                     % Indicates a collision. Move to BackOff State
+                     Nodes(i) = update_node_state(Nodes(i), Collision);
+                 elseif (Nodes(i).TxMCB == Ready && Nodes(i).TxLCB == Invalid)
+                     % Indicates a collision on MCB. Move to BackOff State
+                     Nodes(i) = update_node_state(Nodes(i), Collision);
+                 elseif (Nodes(i).TxMCB == Ready && Nodes(i).TxLCB == Ready)
+                     Nodes(i) = update_node_state(Nodes(i), Collision);
+                 else % Packet is not expected to be in any other state at this point
+                     disp('Error: Packet is in unexpected state!');
+%                      dbgStop;
+                 end
+             case BackOff
+                 % If node was in BackOff State, atleast one packet should
+                 % be Ready. Just decrement the BoS in that case. Else
+                 % there was something wrong. 
+                 if ((Nodes(i).TxMCB == Ready && Nodes(i).TxLCB == Ready)...
+                         ||(Nodes(i).TxMCB == Invalid && Nodes(i).TxLCB == Ready)...
+                         ||(Nodes(i).TxMCB == Ready && Nodes(i).TxLCB == Invalid))
+                     Nodes(i) = update_node_state(Nodes(i), OneSlot);
+                 else
+                     disp('Error: Packet is in unexpected state!');
+%                      dbgstop;
+                 end
+             case NoPkt
+                 % Just make sure that both the packets should be in
+                 % Invalid state. Otherwise give an error. 
+                 if (Nodes(i).TxMCB ~= Invalid && Nodes(i).TxLCB ~= Invalid)
+                     disp('Error: Packet is in unexpected state!');
+%                      dbgstop;
+                 end
          end
      end
-     
      end % for idxT = 1:Nt
      % Performance Graph code goes here
  end % for idxS = 1:Ns
