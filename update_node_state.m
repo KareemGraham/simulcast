@@ -3,7 +3,7 @@ function [node] = update_node_state(node, event)
 % node.State belongs to {NoPkt,Ready2Tx,BackOff} states
 % event belongs to {NewPkt,Collision,TxSuccess} events
 global NoPkt Ready2Tx BackOff Colli
-global NewPkt Collision TxSuccess DropPkt
+global NewPkt Collision TxSuccess OneSlot
 global idxT
 % Some of the node.State and event combinations may be irrelavent in the
 % sense that they are not supposed to occur. We shall just ignore them by
@@ -18,41 +18,19 @@ switch(node.State)
         switch (event)
             case NewPkt                                
                 % This event is possible either due to an MCB packet
-                % scheduling or an LCB schdueling. Ideally, if node.state =
-                % NoPkt, it means that it earlier had no packet to
-                % transmit. Thus, this is the first time it is entering
-                % into contention window (CW) after last successful Tx. Thus,
-                % the CW = 0 for this state event. Still, to be cautious,
-                % we must get the no. of retries that both the packets have
-                % already gone through. If either of them is non zero, we
-                % know that there is a problem. To make sure that this
-                % event does not occur, we must clear the Tx buffers if
-                % packet is successfully tx, or if the packet was dropped
-                % due to exceeding the max no. of retries. If packet is
-                % still below max. no. of retries, make sure that the
-                % node.state = BackOff. 
+                % scheduling or an LCB schdueling. 
+                
                 CW = max(node.TxMCB.Rtr,node.TxLCB.Rtr); % Ideally, CW = 0;
-                if(CW == 0)
-                    node.BoS = randi([0 2^(CW)]) + idxT;
-                    if(node.BoS == idxT)
-                        node.State = Ready2Tx;
-                    else
-                        node.State = BackOff;  
-                    end
+                if(CW == 0) % Allow the packet to transmit in same slot
+                    node.BoS = idxT;
+                    node.State = Ready2Tx;
                 else
-                    disp('Error: Unexpected Size of CW!');             
+                    disp('Error: Unexpected Size of CW!');
 %                     dbstop; % stop the execution for debugging
                 end
-                
-            case Collision
-                
-                
-            case TxSuccess
-            
-            case DropPkt
             
             otherwise
-                disp('Suprious Event');
+                disp('Error: Unexpected event in NoPkt State!');
 %                 dbstop; % stop the execution for debugging. 
         end %switch(event) ends here
     %%%%%%%%%%%%%%% End of node.State = NewPkt %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -75,36 +53,23 @@ switch(node.State)
                 if (node.BoS ~= idxT)
                     disp('Error: Node State Ready2Tx but BoS not idxT!');
 %                     dbstop; % stop the execution for debugging
-                end
-                
+                end         
+
             case Collision
-                % This case happens when node was ready to tx in the same
-                % slot but experienced a collision. We shall simply put the
-                % node into backoff state atand increase the contention
-                % window length. The check if the packet has increased the
-                % max no. of retries is done later at the end of the loop
-                % in main program during node state update. 
-                
+                % Node experienced a collision with atleast one of the
+                % packets. Get the number of retries from both the packets
+                % and move the node to the BoS which is higher among two. 
+                Rtr = max(node.TxMCB.Rtr, node.TxLCB.Rtr);
+                node.BoS = randi([0 (2^Rtr - 1)]) + idxT;
                 node.State = BackOff;
-                % Any of the packets may have suffered collision. We must
-                % check the both.           
-                if (node.TxMCB.State == Colli)
-                    CW = node.TxMCB.Rtr + 1;
-                    node.TxMCB.Rtr = CW;
-                    node.BoS = randi([1,2^CW]) + idxT; % Slot increment from 0 or 1? 
-                elseif (node.TxLCB.State == Colli)
-                    CW = node.TxLCB.Rtr + 1;
-                    node.TxLCB.Rtr = CW;
-                    node.BoS = randi([1,2^CW]) + idxT; % Slot increment from 0 or 1? 
-                end
                 
             case TxSuccess
-                % If a packet got transmitted successfully, the NSM must
-                % check if the node still has another valid packet in other
-                % buffer. 
-            
-            case DropPkt
-                % The node tried transmitting but 
+                % Both the packets got tx successfully or the node had only
+                % one packet to tx which was successful. Node has no more
+                % packet to transmit. 
+                
+                node.BoS = 0;
+                node.State = NoPkt;
                 
             otherwise
                 disp('Suprious Event');
@@ -129,11 +94,16 @@ switch(node.State)
                 
                 node.State = BackOff;                
                 
-            case Collision
+            case OneSlot
+                % Node just went through one slot of waiting period.
+                % Increment the BoS of the node and check if it is equal to
+                % idxT - 1. If so, it is supposed to transmit in next slot.
+                % So, move it into Ready2Tx state.
                 
-            case TxSuccess
-            
-            case DropPkt
+                node.BoS = node.BoS + 1;
+                if (node.BoS == idxT-1)
+                    node.State = Ready2Tx;
+                end
                 
             otherwise
                 disp('Suprious Event');
