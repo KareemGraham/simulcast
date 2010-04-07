@@ -24,7 +24,7 @@ switch(node.State)
                 if(CW == 0) % Allow the packet to transmit in same slot
                     node.State = Ready2Tx;
                 else
-                    node.BoS = BackOff;
+                    node.State = BackOff;
                 end
             
             otherwise
