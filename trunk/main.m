@@ -13,7 +13,7 @@
  global n; % Path Loss Exponent
  global Dmax; % Maximum Distance between two nodes
  global idxT % Current time slot clock counter
- global CWmin, CWmax;
+ global CWmin CWmax
   
  % Node parameters
  
@@ -410,7 +410,10 @@
                  NOP = 0;
              otherwise
                  disp('Error: Packet is in unexpected state!');
-%                  dbgstop;
+                 Nodes(i) % Print Node
+                 Nodes(i).TxMCB % Print Packet
+                 Nodes(i).TxLCB % Print Packet
+                 dbstop;
          end
           
          % LCB Tx Packet Processing
@@ -432,7 +435,10 @@
                  NOP = 0;
              otherwise
                  disp('Error: Packet is in unexpected state!');
-%                  dbgstop;
+                 Nodes(i) % Print Node
+                 Nodes(i).TxMCB % Print Packet
+                 Nodes(i).TxLCB % Print Packet
+                 dbstop;
          end
      end
      
@@ -452,7 +458,10 @@
                      Nodes(i) = update_node_state(Nodes(i), Collision);
                  else % Packet is not expected to be in any other state at this point
                      disp('Error: Packet is in unexpected state!');
-%                      dbgStop;
+                     Nodes(i) % Print Node
+                     Nodes(i).TxMCB % Print Packet
+                     Nodes(i).TxLCB % Print Packet
+                     dbstop;
                  end
              case BackOff
                  % If node was in BackOff State, atleast one packet should
@@ -464,14 +473,20 @@
                      Nodes(i) = update_node_state(Nodes(i), OneSlot);
                  else
                      disp('Error: Packet is in unexpected state!');
-%                      dbgstop;
+                     Nodes(i) % Print Node
+                     Nodes(i).TxMCB % Print Packet
+                     Nodes(i).TxLCB % Print Packet
+                     dbstop;
                  end
              case NoPkt
                  % Just make sure that both the packets should be in
                  % Invalid state. Otherwise give an error. 
-                 if (Nodes(i).TxMCB.State ~= Invalid && Nodes(i).TxLCB.State ~= Invalid)
+                 if (Nodes(i).TxMCB.State ~= Invalid || Nodes(i).TxLCB.State ~= Invalid)
                      disp('Error: Packet is in unexpected state!');
-%                      dbgstop;
+                     Nodes(i) % Print Node
+                     Nodes(i).TxMCB % Print Packet
+                     Nodes(i).TxLCB % Print Packet
+                     dbstop;
                  end
          end
      end
