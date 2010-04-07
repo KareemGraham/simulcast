@@ -62,8 +62,21 @@ send = tx(mcpacket,lcpacket,angle);
 mc_rec = channelAWGN(send,mcdist);
 lc_rec = channelAWGN(send,lcdist);
 
-[mcbm, mcam, mcbm_err, mcam_err]=rx(mc_rec);
-[lcbm, lcam, lcbm_err, lcam_err]=rx(lc_rec);
+[mcbm, mcam]=rx(mc_rec);
+[lcbm, lcam]=rx(lc_rec);
+
+lcbm_err=0;lcam_err=0; mcbm_err=0; mcam_err=0;
+
+[MCNum, MRate]=symerr(mcpacket,mcam);
+[LCNum, LRate]=symerr(lcpacket,lcbm);
+
+if MCNum > 10
+   mcam_err = -1; 
+end
+
+if LCNum > 10
+    lcbm_err = -1;
+end
 
 end
 

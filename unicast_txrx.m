@@ -12,13 +12,23 @@ function [ lcpacket, err ] = unicast_txrx( packet, dist )
 %                       return -1 when error is > 10 bits and fail
 
 
-err = zeros(1,length(dist));
+%err = zeros(1,length(dist));
 
-for i = 1:length(err)
-    send = tx(0,packet(i,:),0);
-    rec = channelAWGN(send,dist(i));
-    [lcpacket(i,:),mc,err(i),mec] = rx(rec);
-end
+%for i = 1:length(err)
+%    send = tx(0,packet(i,:),0);
+%    rec = channelAWGN(send,dist(i));
+%    [lcpacket(i,:),mc,err(i),mec] = rx(rec);
+%end
 
+    send = tx(0,packet,0);
+    rec = channelAWGN(send,dist);
+    [lcpacket,mc] = rx(rec);
+    
+    [Num Rat]=symerr(packet,lcpacket);
+
+    err = 0;
+    if (Num > 10)
+       err = -1; 
+    end
 end
 

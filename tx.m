@@ -15,22 +15,30 @@ offset = offsetAngle*pi()/180;  %Convert degree to radian
 
 %Setup the FEC encoder for packets, the datalength is 923, and total length
 %is 1023 
-enc = fec.bchenc(n,length(lcpacket));
-lcpacket = reshape(lcpacket,length(lcpacket),1);
+%enc = fec.bchenc(n,length(lcpacket));
+%lcpacket = reshape(lcpacket,length(lcpacket),1);
 
 %Encode the less capable packet
-crclcp = encode(enc,double(lcpacket));
-crcmcp = zeros(length(crclcp),1);
+%crclcp = encode(enc,double(lcpacket));
+%crcmcp = zeros(length(crclcp),1);
 
 %Encode the more capable packet if the offset angle is non-zero
-if offset ~= 0     
-     crcmcp = encode(enc,reshape(double(mcpacket),length(mcpacket),1));     
-end;
+%if offset ~= 0     
+%     crcmcp = encode(enc,reshape(double(mcpacket),length(mcpacket),1));     
+%end;
 
 %Apply channel coding for the two messages
-crclcp = channelCoding(crclcp);
-crcmcp = channelCoding(crcmcp);
+%crclcp = channelCoding(crclcp);
+%crcmcp = channelCoding(crcmcp);
 
+%
+%
+%
+crclcp = channelCoding(lcpacket);
+crcmcp = zeros(1,length(crclcp));
+if offset ~= 0
+    crcmcp = channelCoding(mcpacket);
+end
 %Combine the more capable BPSK packet(cosine) and less capable BPSK 
 %packet(sine) to make non-uniform QPSK  
 encoded_packet = a*(cos(offset)*(2*crclcp-1) + 1i*sin(offset)*(2*crcmcp-1));

@@ -31,7 +31,7 @@ volt_attn = ((lamda/(4*pi*dist))^n)^0.5;
 %       = -187.7 dBm or -217.7 dBW 
 %       => SNR must be greater than 217.7 dB for S=0dBW
 
-snr = 237.7; %Using 237.7 for SNR
+snr = 247.7; %Using 247.7 for SNR
 outsig = awgn(volt_attn*insign,snr,0); %
 
 end
