@@ -24,7 +24,7 @@ function [ lcpacket, err ] = unicast_txrx( packet, dist )
     rec = channelAWGN(send,dist);
     [lcpacket,mc] = rx(rec);
     
-    [Num Rat]=symerr(packet,lcpacket);
+    [Num Rat]=symerr(double(packet),lcpacket);
 
     err = 0;
     if (Num > 10)
