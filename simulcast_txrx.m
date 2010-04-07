@@ -67,8 +67,8 @@ lc_rec = channelAWGN(send,lcdist);
 
 lcbm_err=0;lcam_err=0; mcbm_err=0; mcam_err=0;
 
-[MCNum, MRate]=symerr(mcpacket,mcam);
-[LCNum, LRate]=symerr(lcpacket,lcbm);
+[MCNum, MRate]=symerr(double(mcpacket),mcam);
+[LCNum, LRate]=symerr(double(lcpacket),lcbm);
 
 if MCNum > 10
    mcam_err = -1; 
