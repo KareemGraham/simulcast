@@ -27,7 +27,7 @@
  brate  = 512e3;    % Bit rate
  Srate  = 256e3;    % Symbol rate
  Plen   = 923;      % Packet Length in bits
- G      = 0.3;        % Offered Normalized Load to the Network
+ G      = 1;        % Offered Normalized Load to the Network
  R      = G/Mnum;   % Arrival Rate of packets at node
  % It is calculated as Offered Normalized Load/ No. of Nodes. So if the
  % normalized Load is 1, the number of packets each node would schedule to
@@ -44,8 +44,8 @@
  Dmax   = 381;
  
  % Simulation Parameters
- Nt     = 1500;     % Number of time slots simulated for each topology
- Ns     = 2;        % Number of topology simulations
+ Nt     = 1600;     % Number of time slots simulated for each topology
+ Ns     = 1;        % Number of topology simulations
  dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
  % NP is calculated as the attempt rate times number of slots. This should
@@ -164,6 +164,16 @@
      
      
      for idxT = 1:Nt
+         clc
+         if(idxT == 100)
+             ltlcount = 0;
+             pktcount = 0;
+         end
+        Slot = idxT
+        if(idxT > 100)
+            Link2Link = ltlcount/(idxT-100)
+            End2End = etecount/(idxT-100)
+        end
 
         for SrcNode = 1:Mnum
             %%%%%%%% First Process the Node State %%%%%%%%%%%%%%%%%
