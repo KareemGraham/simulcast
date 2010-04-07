@@ -26,7 +26,7 @@
  brate  = 512e3;    % Bit rate
  Srate  = 256e3;    % Symbol rate
  Plen   = 923;      % Packet Length in bits
- G      = 1;        % Offered Normalized Load to the Network
+ G      = 0.3;        % Offered Normalized Load to the Network
  R      = G/Mnum;   % Arrival Rate of packets at node
  % It is calculated as Offered Normalized Load/ No. of Nodes. So if the
  % normalized Load is 1, the number of packets each node would schedule to
@@ -35,13 +35,15 @@
  S      = 0;        % Network throughput
  RT     = 7;        % Maximum No. of retries for a packet before dropping
  n      = 4;        % Path Loss Exponent
+ CWmin  = 4;        % 2^4 - 1 = 0-15 slots
+ CWmax  = 6;        % 0-64 slots
  
  % Simulcast Parameters
  Theta  = 30;       % Offset angle in degrees
  Dmax   = 381;
  
  % Simulation Parameters
- Nt     = 150;     % Number of time slots simulated for each topology
+ Nt     = 1500;     % Number of time slots simulated for each topology
  Ns     = 2;        % Number of topology simulations
  dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
@@ -415,6 +417,7 @@
              case TxS % LCB Pakcet Tx Successful
                  if (Nodes(i).TxLCB.Des == Nodes(i).TxLCB.Tdes) % Packet reached final destination
                      [Nodes(i),Nodes(i).TxLCB] = handle_final_des_pkt(Nodes(i));
+                     etecount = etecount + 1;
                  else % Packet needs to hop to next destination on the route
                      % Get the new route from the function
                      RouteDes = route(Nodes(i).TxLCB.Tdes, Nodes(i).TxLCB.Des, Links);
