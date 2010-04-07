@@ -61,7 +61,13 @@ switch(node.State)
                 % and move the node to the BoS which is higher among two. 
                 Rtr = max(node.TxMCB.Rtr, node.TxLCB.Rtr);
                 node.BoS = randi([0 (2^Rtr - 1)]) + idxT;
-                node.State = BackOff;
+                if(node.BoS == idxT)
+                    node.State = Ready2Tx;
+                elseif(node.BoS > idxT)
+                    node.State = BackOff;
+                else
+                    disp('Error! Invalid node BoS value');
+                end
                 
             case TxSuccess
                 % Both the packets got tx successfully or the node had only
