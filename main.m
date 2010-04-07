@@ -13,6 +13,7 @@
  global n; % Path Loss Exponent
  global Dmax; % Maximum Distance between two nodes
  global idxT % Current time slot clock counter
+ global CWmin, CWmax;
   
  % Node parameters
  
