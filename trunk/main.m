@@ -15,8 +15,7 @@
  global idxT % Current time slot clock counter
  global CWmin CWmax
  
- Attempt_tot = 0;
- 
+
  Wired = 0;     %Simulate Wired Network
  CntStart = 100; %Slot where counters are enabled
  
@@ -25,9 +24,12 @@
  Mnum   = 15;       % Number of nodes on network
  Xmax   = 1000;      % X dimension of area in meters
  Ymax   = 1000;      % Y dimension of area in meters
- Sig    = 400;        % STD distribution of nodes in the area
- 
- 
+ Sig    = 0;        % STD distribution of nodes in the area
+
+  Attempt_tot = 0;
+  iAttempts_tot = zeros(1,Mnum);
+  iLinkCount = zeros(1,Mnum);
+
  % Declaring Slotted ALOHA Network Parameters
  brate  = 512e3;    % Bit rate
  Srate  = 256e3;    % Symbol rate
@@ -176,17 +178,24 @@
          clc
          if(idxT == CntStart)
              ltlcount = 0;
+             iLinkCount = zeros(1,Mnum);
              pktcount = 0;
          end
         Slot = idxT
         if(idxT > CntStart)
             Link2Link = ltlcount/(idxT-CntStart)
+            iLink2Link= iLinkCount/(idxT-CntStart);
+            AvgLink2Link = mean(iLink2Link)
             End2End = etecount/(idxT-CntStart)
         end
         attempt_rate = Attempt_tot/idxT
+        iattempt_rate = iAttempts_tot/idxT;
+        AvgAttempt_rate = mean(iattempt_rate)
         
         for SrcNode = 1:Mnum
             %%%%%%%% First Process the Node State %%%%%%%%%%%%%%%%%
+            
+            iLinkCount(SrcNode) = Nodes(SrcNode).LinkCount;
             
             TempPkt = Pkt;
             TempPkt.Src = SrcNode;
@@ -329,6 +338,8 @@
             end
         end
         Attempts = (length(find(MCPactivity)) + length(find(LCPactivity)));
+        iAttempts = (MCPactivity > 0) + (LCPactivity > 0);
+        iAttempts_tot = iAttempts_tot + iAttempts; 
         Attempt_tot = Attempts + Attempt_tot;
 
         % Change the packets status when collision occurs so that it does not
