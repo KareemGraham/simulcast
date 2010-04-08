@@ -18,7 +18,7 @@
  Attempt_tot = 0;
  
  Wired = 0;     %Simulate Wired Network
- CntStart = 500; %Slot where counters are enabled
+ CntStart = 100; %Slot where counters are enabled
  
  % Node parameters
  
@@ -32,24 +32,24 @@
  brate  = 512e3;    % Bit rate
  Srate  = 256e3;    % Symbol rate
  Plen   = 923;      % Packet Length in bits
- G      = 150;        % Offered Normalized Load to the Network
+ G      = 15;        % Offered Normalized Load to the Network
  R      = G/Mnum;   % Arrival Rate of packets at node
  % It is calculated as Offered Normalized Load/ No. of Nodes. So if the
  % normalized Load is 1, the number of packets each node would schedule to
  % transmit in Mnum slots should be only 1. Thus, on an average, the number
  % of packets tranmitted in each slot is 1/Mnum by each node. 
  S      = 0;        % Network throughput
- RT     = 7;        % Maximum No. of retries for a packet before dropping
+ RT     = 4;        % Maximum No. of retries for a packet before dropping
  n      = 4;        % Path Loss Exponent
  CWmin  = 4;        % 2^4 - 1 = 0-15 slots
  CWmax  = 6;        % 0-64 slots
  
  % Simulcast Parameters
- Theta  = 0;       % Offset angle in degrees
+ Theta  = 19.25;       % Offset angle in degrees
  Dmax   = 381;
  
  % Simulation Parameters
- Nt     = 16000;     % Number of time slots simulated for each topology
+ Nt     = 1600;     % Number of time slots simulated for each topology
  Ns     = 1;        % Number of topology simulations
  dF     = 1;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
