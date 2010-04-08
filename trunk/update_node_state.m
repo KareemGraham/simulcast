@@ -58,16 +58,13 @@ switch(node.State)
                 % packets. Get the number of retries from both the packets
                 % and move the node to the BoS which is higher among two. 
                 Rtr = max(node.TxMCB.Rtr, node.TxLCB.Rtr);
-                switch(Rtr)
+                switch(Rtr > (CWmax-CWmin))
+                    % Cap the contention window to CWmax from 
                     case 1
-                        CW = 2^(CWmin + Rtr);
-                        node.BoS = randi([1,CW]) + idxT;
-                    case 2
-                        CW = 2^(CWmin + Rtr);
-                        node.BoS = randi([1,CW]) + idxT;
-                        % Cap the contention window to CWmax from 
-                    otherwise
                         CW = 2^CWmax;
+                        node.BoS = randi([1,CW]) + idxT;
+                    otherwise
+                        CW = 2^(CWmin + Rtr);
                         node.BoS = randi([1,CW]) + idxT;
                 end
                 % Set the state of the node as per BOS
