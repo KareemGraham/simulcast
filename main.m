@@ -14,20 +14,25 @@
  global Dmax; % Maximum Distance between two nodes
  global idxT % Current time slot clock counter
  global CWmin CWmax
-  
+ 
+ Attempt_tot = 0;
+ 
+ Wired = 0;     %Simulate Wired Network
+ CntStart = 500; %Slot where counters are enabled
+ 
  % Node parameters
  
  Mnum   = 15;       % Number of nodes on network
  Xmax   = 1000;      % X dimension of area in meters
  Ymax   = 1000;      % Y dimension of area in meters
- Sig    = 0;        % STD distribution of nodes in the area
+ Sig    = 400;        % STD distribution of nodes in the area
  
  
  % Declaring Slotted ALOHA Network Parameters
  brate  = 512e3;    % Bit rate
  Srate  = 256e3;    % Symbol rate
  Plen   = 923;      % Packet Length in bits
- G      = 1;        % Offered Normalized Load to the Network
+ G      = 150;        % Offered Normalized Load to the Network
  R      = G/Mnum;   % Arrival Rate of packets at node
  % It is calculated as Offered Normalized Load/ No. of Nodes. So if the
  % normalized Load is 1, the number of packets each node would schedule to
@@ -40,13 +45,13 @@
  CWmax  = 6;        % 0-64 slots
  
  % Simulcast Parameters
- Theta  = 30;       % Offset angle in degrees
+ Theta  = 0;       % Offset angle in degrees
  Dmax   = 381;
  
  % Simulation Parameters
- Nt     = 1600;     % Number of time slots simulated for each topology
+ Nt     = 16000;     % Number of time slots simulated for each topology
  Ns     = 1;        % Number of topology simulations
- dF     = 0;        % drawFigure parameter of topo function fame :)
+ dF     = 1;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
  % NP is calculated as the attempt rate times number of slots. This should
  % give us the number of packets each node would try to transmit during the
@@ -142,11 +147,15 @@
  
  % Start Topology Simulation
  for idxS = 1:Ns,
+     if(Wired)
+         Theta = 0;
+     end
      % Get the node distribution, link table and max. no. of hops for each
      % node
      Nodes(1:Mnum) = Node; % Clear all the nodes when simulating new topology
      [nodeXY, Links, Mh] = topo(Mnum, Xmax, Ymax, Sig, Theta, dF);
-          
+     
+     pause(.001);    
      % Node Initialization 
      for idxNode = 1:Mnum
          Nodes(idxNode).ID  = idxNode;
@@ -165,16 +174,17 @@
      
      for idxT = 1:Nt
          clc
-         if(idxT == 100)
+         if(idxT == CntStart)
              ltlcount = 0;
              pktcount = 0;
          end
         Slot = idxT
-        if(idxT > 100)
-            Link2Link = ltlcount/(idxT-100)
-            End2End = etecount/(idxT-100)
+        if(idxT > 1000)
+            Link2Link = ltlcount/(idxT-CntStart)
+            End2End = etecount/(idxT-CntStart)
         end
-
+        attempt_rate = Attempt_tot/idxT
+        
         for SrcNode = 1:Mnum
             %%%%%%%% First Process the Node State %%%%%%%%%%%%%%%%%
             
@@ -306,11 +316,21 @@
                 LCPactivity(i) = Nodes(i).TxLCB.Tdes;
             end
         end    
-
         %Evaluation the activities to detection collision
         MCPC = collision_detect(Links,MCPactivity);
         LCPC = collision_detect(Links,LCPactivity);
-        
+        if(Wired)
+            Theta = 0;
+            if(length(find(MCPactivity, 2)) > 1)
+                MCPC = MCPactivity > 0;
+            end
+            if(length(find(LCPactivity, 2)) > 1)
+                LCPC = LCPactivity > 0;
+            end
+        end
+        Attempts = (length(find(MCPactivity)) + length(find(LCPactivity)));
+        Attempt_tot = Attempts + Attempt_tot;
+
         % Change the packets status when collision occurs so that it does not
         % participate in the tx process. 
         
