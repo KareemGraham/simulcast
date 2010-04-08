@@ -179,7 +179,7 @@
              pktcount = 0;
          end
         Slot = idxT
-        if(idxT > 1000)
+        if(idxT > CntStart)
             Link2Link = ltlcount/(idxT-CntStart)
             End2End = etecount/(idxT-CntStart)
         end
