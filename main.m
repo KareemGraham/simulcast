@@ -43,11 +43,11 @@
  S      = 0;        % Network throughput
  RT     = 4;        % Maximum No. of retries for a packet before dropping
  n      = 4;        % Path Loss Exponent
- CWmin  = 4;        % 2^4 - 1 = 0-15 slots
- CWmax  = 6;        % 0-64 slots
+ CWmin  = 2;        % 2^4 - 1 = 0-15 slots
+ CWmax  = 4;        % 0-64 slots
  
  % Simulcast Parameters
- Theta  = 19.25;       % Offset angle in degrees
+ Theta  = 0;       % Offset angle in degrees
  Dmax   = 381;
  
  % Simulation Parameters
@@ -337,8 +337,9 @@
                 LCPC = LCPactivity > 0;
             end
         end
-        Attempts = (length(find(MCPactivity)) + length(find(LCPactivity)));
-        iAttempts = (MCPactivity > 0) + (LCPactivity > 0);
+        iAttempts = (MCPactivity > 0) + (LCPactivity > 0) > 0;
+        Attempts = sum(iAttempts);
+        %Attempts = (length(find(MCPactivity)) + length(find(LCPactivity)));
         iAttempts_tot = iAttempts_tot + iAttempts; 
         Attempt_tot = Attempts + Attempt_tot;
 
