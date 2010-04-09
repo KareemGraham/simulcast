@@ -47,7 +47,7 @@
  CWmax  = 4;        % 0-64 slots
  
  % Simulcast Parameters
- Theta  = 0;       % Offset angle in degrees
+ Theta  = 19.25;       % Offset angle in degrees
  Dmax   = 381;
  
  % Simulation Parameters
@@ -183,10 +183,10 @@
          end
         Slot = idxT
         if(idxT > CntStart)
-            Link2Link = ltlcount/(idxT-CntStart)
+            Link2Link = ltlcount/(idxT-CntStart)/Mnum
             iLink2Link= iLinkCount/(idxT-CntStart);
             AvgLink2Link = mean(iLink2Link)
-            End2End = etecount/(idxT-CntStart)
+            End2End = etecount/(idxT-CntStart)/Mnum
         end
         attempt_rate = Attempt_tot/idxT
         iattempt_rate = iAttempts_tot/idxT;
