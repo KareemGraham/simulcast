@@ -34,8 +34,7 @@
  brate  = 512e3;    % Bit rate
  Srate  = 256e3;    % Symbol rate
  Plen   = 923;      % Packet Length in bits
- G      = 15;        % Offered Normalized Load to the Network
- R      = G/Mnum;   % Arrival Rate of packets at node
+ R      = 0.8;   % Arrival Rate of packets at node
  % It is calculated as Offered Normalized Load/ No. of Nodes. So if the
  % normalized Load is 1, the number of packets each node would schedule to
  % transmit in Mnum slots should be only 1. Thus, on an average, the number
@@ -202,8 +201,8 @@
             TempPkt.Tsrc = SrcNode;
             TempPkt.Type = Normal;
             TempPkt.State = Ready;
-            % Get number of arriving packets as per Poisson Dist.
-            NumPkts = poissonTx(R); % As per Arrival Rate as per Poisson DB
+            % Get number of arriving packets as per Bernoulli Distribution
+            NumPkts = binornd(1,R); % R is the Arrival Rate
             if NumPkts == 0
                 continue; % If new arrival pkts = 0, go to next node
             end
