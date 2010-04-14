@@ -4,13 +4,7 @@ function [node] = update_node_state(node, event)
 % event belongs to {NewPkt,Collision,TxSuccess} events
 global NoPkt Ready2Tx BackOff
 global NewPkt Collision TxSuccess OneSlot
-global idxT
-global CWmax CWmin
-% Some of the node.State and event combinations may be irrelavent in the
-% sense that they are not supposed to occur. We shall just ignore them by
-% not doing anything in those cases but retain their handle in the switch
-% routines if we need them at all. 
-
+global idxT Rmax Pr
 
 switch(node.State)
     %%%%% The node did not have any packet to transmit before this %%%%%%%
@@ -19,17 +13,17 @@ switch(node.State)
             case NewPkt                                
                 % This event is possible either due to an MCB packet
                 % scheduling or an LCB schdueling.
-                CW = randi([0,2^CWmin-1]);
-                node.BoS = CW + idxT;
-                if(CW == 0) % Allow the packet to transmit in same slot
-                    node.State = Ready2Tx;
-                else
+                % If node was supposed to be in BackOff state due to
+                % earlier collision, keep it in the same state
+                if (node.BoS > idxT)
                     node.State = BackOff;
+                else % Allow the packet to transmit in same slot
+                    node.State = Ready2Tx;
+                    node.BoS = idxT;
                 end
-            
             otherwise
                 disp('Error: Unexpected event in NoPkt State!');
-%                 dbstop; % stop the execution for debugging. 
+                dbstop; % stop the execution for debugging. 
         end %switch(event) ends here
     %%%%%%%%%%%%%%% End of node.State = NewPkt %%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
@@ -48,24 +42,39 @@ switch(node.State)
                 % not change the state of the node. 
                 
                 node.State = Ready2Tx;
-                if (node.BoS ~= idxT)
+                if (node.BoS > idxT)
                     disp('Error: Node State Ready2Tx but BoS not idxT!');
-%                     dbstop; % stop the execution for debugging
+                    node
+                    node.TxMCB
+                    node.TxLCB
+                    dbstop; % stop the execution for debugging
                 end         
 
             case Collision
-                % Node experienced a collision with atleast one of the
-                % packets. Get the number of retries from both the packets
-                % and move the node to the BoS which is higher among two. 
+                % Node experienced a collision. Assign random number of
+                % slots waiting period as per geometric probability
+                % distribution. Pr is the probability that a node would
+                % try retransmission in next slot.
+                
                 Rtr = max(node.TxMCB.Rtr, node.TxLCB.Rtr);
-                switch(Rtr > (CWmax-CWmin))
-                    % Cap the contention window to CWmax from 
+                switch(Rtr <= Rmax)
+                    % Note that when both packets suffer collision and only
+                    % one gets dropped, handle_failed_pkt marks later pkt
+                    % as invalid but keeps the pkt.Rtr == Rmax so that it
+                    % could be differntiated from TxSuccess. Hence, one
+                    % packet being dropped and one packet getting collided
+                    % would result in execution of this stage when one of
+                    % the packets may have number of retries = Rmax
                     case 1
-                        CW = 2^CWmax;
-                        node.BoS = randi([1,CW]) + idxT;
+                        node.BoS = geornd(Pr) + idxT;
+                        if(node.TxMCB.Rtr == Rmax)
+                            node.TxMCB.Rtr = 0;
+                        elseif(node.TxLCB.Rtr == Rmax)
+                            node.TxLCB.Rtr = 0;
+                        end
                     otherwise
-                        CW = 2^(CWmin + Rtr);
-                        node.BoS = randi([1,CW]) + idxT;
+                        disp('Error: Packet exceeded Rmax Retries!');
+                        dbgstop
                 end
                 % Set the state of the node as per BOS
                 if(node.BoS > (idxT+1))
@@ -77,21 +86,25 @@ switch(node.State)
                 end
                 
             case TxSuccess
-                % Both the packets got tx successfully or the node had only
-                % one packet to tx which was successful. Node has no more
+                % Both the packets got tx successfully, or the node had only
+                % one packet to tx which was successful, or the node
+                % dropped the packet. We need to make sure that if the
+                % packet was dropped, we still need to increase the BOS. 
                 % packet to transmit. 
                 node.State = NoPkt;
-                % Sanity Check to make sure that node's state and idxT do
-                % not have discrepancies. If node was in Ready2Tx, it must
-                % have BoS = idxt. Reset the BoS or produce an error. 
-                if (node.BoS == idxT)
-                    node.BoS = 0;
-                else
-                    disp('Node state Ready2Tx but BoS != idxT!');
+                % It means that at least one of the packets suffered a
+                % collision and got dropped. 
+                if (node.TxMCB.Rtr == Rmax || node.TxLCB.Rtr == Rmax)
+                    node.BoS = geornd(Pr) + idxT;
+                    % Clear the packets retries again to be cautious
+                    node.TxMCB.Rtr = 0;
+                    node.TxLCB.Rtr = 0;
+                else % it was a successful transmission. Tx in next slot
+                    node.BoS = idxT + 1;
                 end
             otherwise
                 disp('Suprious Event');
-%                 dbstop; % stop the execution for debugging. 
+                dbstop; % stop the execution for debugging. 
         end %switch(event) ends here
     
    %%%%%%%%%%%%%% End of node.State = Ready2Tx %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -122,7 +135,7 @@ switch(node.State)
                 
             otherwise
                 disp('Suprious Event');
-%                 dbstop; % stop the execution for debugging. 
+                dbstop; % stop the execution for debugging. 
                 
                 
         end %switch(event) ends here
