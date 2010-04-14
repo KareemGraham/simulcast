@@ -4,8 +4,11 @@ function [node,txBuff] = handle_failed_pkt(node,txBuff)
 global Rmax Pkt Ready
 Retries = txBuff.Rtr;
 if(Retries == Rmax)
-    % Number of retries reached, drop the packet
+    % Number of retries reached, drop the packet but maintain the number of
+    % retries so that node state machine knows that the packet was dropped
+    % and increment the number of slots as per geometric distribution. 
     txBuff = Pkt;
+    txBuff.Rtr = Retries;
 elseif(Retries < Rmax)
     % Packet state is either TxF or Colli. Change it to Ready for next
     % attempt

@@ -13,9 +13,8 @@
  global n; % Path Loss Exponent
  global Dmax; % Maximum Distance between two nodes
  global idxT % Current time slot clock counter
- global CWmin CWmax
+ global Pr
  
-
  Wired = 0;     %Simulate Wired Network
  CntStart = 100; %Slot where counters are enabled
  
@@ -42,8 +41,10 @@
  S      = 0;        % Network throughput
  RT     = 4;        % Maximum No. of retries for a packet before dropping
  n      = 4;        % Path Loss Exponent
- CWmin  = 2;        % 2^4 - 1 = 0-15 slots
- CWmax  = 4;        % 0-64 slots
+ %CWmin  = 2;        % 2^4 - 1 = 0-15 slots KILL THEM
+ %CWmax  = 4;        % 0-64 slots
+ Pr     = 0.5;      % Introducing the world famous Pr as the probability of
+                    % retransmission in next slot
  
  % Simulcast Parameters
  Theta  = 19.25;       % Offset angle in degrees
@@ -487,7 +488,9 @@
          switch(Nodes(i).State)
              case Ready2Tx
                  if (Nodes(i).TxMCB.State == Invalid && Nodes(i).TxLCB.State == Invalid)
-                     % No more packet to transmit. Move to NoPkt. 
+                     % No packet to transmit or both the packets got
+                     % dropped due to collision. Packets have been cleared
+                     % but maintain the BoS in update node state routine. 
                      Nodes(i) = update_node_state(Nodes(i), TxSuccess);
                  elseif (Nodes(i).TxMCB.State == Invalid && Nodes(i).TxLCB.State == Ready)
                      % Indicates a collision. Move to BackOff State

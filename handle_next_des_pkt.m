@@ -5,7 +5,7 @@ SrcBuff.Tsrc = SrcBuff.Tdes; % Get the source from received packet
 SrcBuff.Tdes = DesNode.ID; % Next destination is DesNode's ID
 SrcBuff.Type = Fwd; % Mark the packet to be of type Fwd
 SrcBuff.State = Ready; % Move the packet to be in Ready state
-SrcBuff.Rtr = 0; % Reset the retries to be zeo
+SrcBuff.Rtr = 0; % Reset the retries to be zero
 % Schedule the packet in one of the Fwd queues of next hop node
 if (links(SrcBuff.Tsrc, SrcBuff.Tdes) > 0)
     % Can be put on the More Capable Link Fwd Queue
