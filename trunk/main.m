@@ -1,3 +1,4 @@
+
 % main.m 
 % 
 % Simulcast Packet Transmission on an Ad Hoc Network using Slotted ALOHA
@@ -20,7 +21,7 @@
  
  % Node parameters
  
- Mnum   = 15;       % Number of nodes on network
+ Mnum   = 10;       % Number of nodes on network
  Xmax   = 1000;      % X dimension of area in meters
  Ymax   = 1000;      % Y dimension of area in meters
  Sig    = 0;        % STD distribution of nodes in the area
@@ -33,7 +34,7 @@
  brate  = 512e3;    % Bit rate
  Srate  = 256e3;    % Symbol rate
  Plen   = 923;      % Packet Length in bits
- R      = 0.8;   % Arrival Rate of packets at node
+ R      = 1;   % Arrival Rate of packets at node
  % It is calculated as Offered Normalized Load/ No. of Nodes. So if the
  % normalized Load is 1, the number of packets each node would schedule to
  % transmit in Mnum slots should be only 1. Thus, on an average, the number
@@ -43,17 +44,17 @@
  n      = 4;        % Path Loss Exponent
  %CWmin  = 2;        % 2^4 - 1 = 0-15 slots KILL THEM
  %CWmax  = 4;        % 0-64 slots
- Pr     = 0.5;      % Introducing the world famous Pr as the probability of
+ Pr     = R;      % Introducing the world famous Pr as the probability of
                     % retransmission in next slot
  
  % Simulcast Parameters
- Theta  = 19.25;       % Offset angle in degrees
+ Theta  = 0;       % Offset angle in degrees
  Dmax   = 381;
  
  % Simulation Parameters
  Nt     = 1600;     % Number of time slots simulated for each topology
- Ns     = 1;        % Number of topology simulations
- dF     = 1;        % drawFigure parameter of topo function fame :)
+ Ns     = 40;        % Number of topology simulations
+ dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
  % NP is calculated as the attempt rate times number of slots. This should
  % give us the number of packets each node would try to transmit during the
@@ -149,6 +150,8 @@
  
  % Start Topology Simulation
  for idxS = 1:Ns,
+     R = rand;
+     Pr = rand;
      if(Wired)
          Theta = 0;
      end
@@ -176,10 +179,14 @@
      
      for idxT = 1:Nt
          clc
-         if(idxT == CntStart)
+         if(idxT == CntStart || idxT == 1)
              ltlcount = 0;
              iLinkCount = zeros(1,Mnum);
              pktcount = 0;
+             iattempt_rate = 0;
+             iLink2Link = 0;
+             iAttempts_tot = 0;
+             etecount = 0;
          end
         Slot = idxT
         if(idxT > CntStart)
@@ -188,9 +195,10 @@
             AvgLink2Link = mean(iLink2Link)
             End2End = etecount/(idxT-CntStart)/Mnum
         end
-        attempt_rate = Attempt_tot/idxT
+        attempt_rate = Attempt_tot/idxT;
         iattempt_rate = iAttempts_tot/idxT;
         AvgAttempt_rate = mean(iattempt_rate)
+        %Calc_G = (R*(Mnum-2/Pr)+Pr*2/Pr)/Mnum
         
         for SrcNode = 1:Mnum
             %%%%%%%% First Process the Node State %%%%%%%%%%%%%%%%%
@@ -536,6 +544,8 @@
      end
      end % for idxT = 1:Nt
      % Performance Graph code goes here
+     AvgLink2LinkT(idxS) = AvgLink2Link;
+     AvgAttempt_rateT(idxS) = AvgAttempt_rate;
  end % for idxS = 1:Ns
  t2=clock;
  Sim_time = etime(t2,t1)
