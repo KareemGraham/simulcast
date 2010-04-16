@@ -44,7 +44,7 @@
  n      = 4;        % Path Loss Exponent
  %CWmin  = 2;        % 2^4 - 1 = 0-15 slots KILL THEM
  %CWmax  = 4;        % 0-64 slots
- Pr     = R;      % Introducing the world famous Pr as the probability of
+ Pr     = 0;      % Introducing the world famous Pr as the probability of
                     % retransmission in next slot
  
  % Simulcast Parameters
@@ -53,7 +53,7 @@
  
  % Simulation Parameters
  Nt     = 1600;     % Number of time slots simulated for each topology
- Ns     = 40;        % Number of topology simulations
+ Ns     = 15;        % Number of topology simulations
  dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
  % NP is calculated as the attempt rate times number of slots. This should
@@ -147,11 +147,12 @@
  Node.LcFQ = Q;
  Node.McFQ = Q;
  Nodes = Node;
- 
+ BoffNodes = zeros(Mnum,1);
  % Start Topology Simulation
  for idxS = 1:Ns,
-     R = rand;
-     Pr = rand;
+     G = idxS/Ns;
+     R = .01;
+     %Pr = rand;
      if(Wired)
          Theta = 0;
      end
@@ -179,6 +180,17 @@
      
      for idxT = 1:Nt
          clc
+         %G = ((Mnum - sum(BoffNodes))*R + Pr*sum(BoffNodes))/Mnum
+         %Prtmp = (G*Mnum-(Mnum - sum(BoffNodes))*R)/sum(BoffNodes);
+         %Rtmp  = (G*Mnum-Pr*sum(BoffNodes))/(Mnum - sum(BoffNodes));
+	 Pr = min(G,1/sum(BoffNodes))
+         
+%          if (Prtmp > 0 && Prtmp < 1)
+%              Pr = Prtmp;
+%          elseif (Rtmp > 0 && Rtmp < 1)
+%              R = Rtmp;
+%          end
+         
          if(idxT == CntStart || idxT == 1)
              ltlcount = 0;
              iLinkCount = zeros(1,Mnum);
@@ -202,7 +214,7 @@
         
         for SrcNode = 1:Mnum
             %%%%%%%% First Process the Node State %%%%%%%%%%%%%%%%%
-            
+            BoffNodes(SrcNode) = Nodes(SrcNode).State == BackOff;
             iLinkCount(SrcNode) = Nodes(SrcNode).LinkCount;
             
             TempPkt = Pkt;
@@ -549,3 +561,6 @@
  end % for idxS = 1:Ns
  t2=clock;
  Sim_time = etime(t2,t1)
+XY = sortrows([AvgAttempt_rateT' AvgLink2LinkT'])';
+X = XY(1,:); Y = XY(2,:);
+plot(X,Y)
