@@ -22,8 +22,8 @@
  % Node parameters
  
  Mnum   = 10;       % Number of nodes on network
- Xmax   = 1000;      % X dimension of area in meters
- Ymax   = 1000;      % Y dimension of area in meters
+ Xmax   = 5000;      % X dimension of area in meters
+ Ymax   = 5000;      % Y dimension of area in meters
  Sig    = 0;        % STD distribution of nodes in the area
 
   Attempt_tot = 0;
@@ -49,11 +49,14 @@
  
  % Simulcast Parameters
  Theta  = 0;       % Offset angle in degrees
- Dmax   = 381;
+ Dmax   = 1000;
  
  % Simulation Parameters
+ %Prs = [10^-3:10^-3:10^-2 2*10^-2:0.5*10^-2:10^-1 2*10^-1:10^-1:10^-0];
+ Prs = logspace(-3,0,20);
+ 
  Nt     = 1600;     % Number of time slots simulated for each topology
- Ns     = 15;        % Number of topology simulations
+ Ns     = length(Prs);        % Number of topology simulations
  dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
  % NP is calculated as the attempt rate times number of slots. This should
@@ -149,9 +152,11 @@
  Nodes = Node;
  BoffNodes = zeros(Mnum,1);
  % Start Topology Simulation
+ [nodeXY, Links, Mh] = topo(Mnum, Xmax, Ymax, Sig, Theta, dF);
+
  for idxS = 1:Ns,
-     G = idxS/Ns;
-     R = .01;
+     Pr = Prs(idxS);
+     R = Pr;
      %Pr = rand;
      if(Wired)
          Theta = 0;
@@ -159,7 +164,6 @@
      % Get the node distribution, link table and max. no. of hops for each
      % node
      Nodes(1:Mnum) = Node; % Clear all the nodes when simulating new topology
-     [nodeXY, Links, Mh] = topo(Mnum, Xmax, Ymax, Sig, Theta, dF);
      
      pause(.001);    
      % Node Initialization 
@@ -183,7 +187,7 @@
          %G = ((Mnum - sum(BoffNodes))*R + Pr*sum(BoffNodes))/Mnum
          %Prtmp = (G*Mnum-(Mnum - sum(BoffNodes))*R)/sum(BoffNodes);
          %Rtmp  = (G*Mnum-Pr*sum(BoffNodes))/(Mnum - sum(BoffNodes));
-	 Pr = min(G,1/sum(BoffNodes))
+         %Pr = min(G,G/sum(BoffNodes))
          
 %          if (Prtmp > 0 && Prtmp < 1)
 %              Pr = Prtmp;
@@ -564,3 +568,4 @@
 XY = sortrows([AvgAttempt_rateT' AvgLink2LinkT'])';
 X = XY(1,:); Y = XY(2,:);
 plot(X,Y)
+clear XY Nodes
