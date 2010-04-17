@@ -1,11 +1,12 @@
-function [ ] = plotavg( root_dir )
+function [ ] = plotavg( root_dir, Theta )
 %PLOTAVG Summary of this function goes here
 %   Detailed explanation goes here
 x=1;
+Theta = num2str(Theta);
 Xstr = [];
 Ystr = [];
-while (exist([root_dir,'\',num2str(x), '.mat'],'file'))
-    S = ['load ',root_dir,'\',num2str(x),'.mat X Y'];
+while (exist([root_dir,'\Theta-',Theta,'\',num2str(x), '.mat'],'file'))
+    S = ['load ',root_dir,'\Theta-',Theta,'\',num2str(x),'.mat X Y'];
     eval(S);
     S = ['X',num2str(x),'=X;'];
     eval(S);
@@ -16,6 +17,6 @@ while (exist([root_dir,'\',num2str(x), '.mat'],'file'))
     x = x + 1;
 end
 %S = ['semilogx([',Xstr,'],[',Ystr,'],',char(39),'kx',char(39),')'];
-S = ['createfigure([',Xstr,'],[',Ystr,'])'];
+S = ['createfigure([',Xstr,'],[',Ystr,'],Theta)'];
 eval(S)
 end

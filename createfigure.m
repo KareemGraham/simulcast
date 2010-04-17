@@ -1,4 +1,4 @@
-function createfigure(X1, Y1)
+function createfigure(X1, Y1, Theta)
 %CREATEFIGURE(X1,Y1)
 %  X1:  vector of x data
 %  Y1:  vector of y data
@@ -7,7 +7,7 @@ function createfigure(X1, Y1)
 
 % Create figure
 figure1 = figure;
-
+title(['Theta = ', Theta]);
 % Create axes
 axes1 = axes('Parent',figure1,'XScale','log','XMinorTick','on');
 % Uncomment the following line to preserve the X-limits of the axes
@@ -18,7 +18,7 @@ hold(axes1,'all');
 % Create semilogx
 semilogx1 = semilogx(X1,Y1,'Marker','x','LineStyle','none',...
     'DisplayName','data 1',...
-    'Color',[0 0 0]);
+    'Color',[1 1 1]);
 
 axis([10^-3 1 0 0.15]);
 
@@ -50,7 +50,7 @@ yplot1 = polyval(fitResults1, xplot1);
 % Plot the fit
 fitLine1 = plot(xplot1,yplot1,'DisplayName','   cubic','Parent',axes1,...
     'Tag','cubic',...
-    'Color',[0.75 0 0.75]);
+    'Color',[0 0 0]);
 
 % Set new line in proper position
 setLineOrder(axes1, fitLine1, semilogx1);
