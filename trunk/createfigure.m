@@ -7,11 +7,12 @@ function createfigure(X1, Y1, Theta)
 
 % Create figure
 figure1 = figure;
-title(['Theta = ', Theta]);
+
 % Create axes
 axes1 = axes('Parent',figure1,'XScale','log','XMinorTick','on');
 % Uncomment the following line to preserve the X-limits of the axes
-% xlim(axes1,[0.001 1]);
+title(axes1,['Theta = ', Theta]);
+xlim(axes1,[0.001 1]);
 box(axes1,'on');
 hold(axes1,'all');
 
@@ -20,7 +21,7 @@ semilogx1 = semilogx(X1,Y1,'Marker','x','LineStyle','none',...
     'DisplayName','data 1',...
     'Color',[1 1 1]);
 
-axis([10^-3 1 0 0.15]);
+%axis([10^-3 1 0 0.15]);
 
 % Get xdata from plot
 xdata1 = get(semilogx1, 'xdata');
@@ -47,8 +48,9 @@ xplot1 = linspace(axesLimits1(1), axesLimits1(2));
 fitResults1 = polyfit(xdata1, ydata1, 3);
 % Evaluate polynomial
 yplot1 = polyval(fitResults1, xplot1);
+yplot1 = yplot1.*(yplot1 > 0);
 % Plot the fit
-fitLine1 = plot(xplot1,yplot1,'DisplayName','   cubic','Parent',axes1,...
+fitLine1 = plot(xplot1,yplot1,'DisplayName','cubic','Parent',axes1,...
     'Tag','cubic',...
     'Color',[0 0 0]);
 
