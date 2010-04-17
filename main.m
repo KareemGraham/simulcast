@@ -17,14 +17,14 @@
  global Pr
  
  Wired = 0;     %Simulate Wired Network
- CntStart = 100; %Slot where counters are enabled
+ CntStart = 1000; %Slot where counters are enabled
  
  % Node parameters
  
- Mnum   = 10;       % Number of nodes on network
- Xmax   = 5000;      % X dimension of area in meters
- Ymax   = 5000;      % Y dimension of area in meters
- Sig    = 100;        % STD distribution of nodes in the area
+ Mnum   = 15;       % Number of nodes on network
+ Xmax   = 1000;      % X dimension of area in meters
+ Ymax   = 1000;      % Y dimension of area in meters
+ Sig    = 0;        % STD distribution of nodes in the area
 
   Attempt_tot = 0;
   iAttempts_tot = zeros(1,Mnum);
@@ -49,13 +49,13 @@
  
  % Simulcast Parameters
  Theta  = 19.25;       % Offset angle in degrees
- Dmax   = 1000;
+ Dmax   = 381;
  
  % Simulation Parameters
  %Prs = [10^-3:10^-3:10^-2 2*10^-2:0.5*10^-2:10^-1 2*10^-1:10^-1:10^-0];
  Prs = logspace(-3,0,20);
  
- Nt     = 1600;     % Number of time slots simulated for each topology
+ Nt     = 2500;     % Number of time slots simulated for each topology
  Ns     = length(Prs);        % Number of topology simulations
  dF     = 0;        % drawFigure parameter of topo function fame :)
  NP     = ceil(Nt*R); % No. of packets each node would have to transmit.
@@ -195,7 +195,7 @@
 
 
                      for idxT = 1:Nt
-                         clc
+                         %clc
 
                          if(idxT == CntStart || idxT == 1)
                              ltlcount = 0;
@@ -206,16 +206,17 @@
                              iAttempts_tot = 0;
                              etecount = 0;
                          end
-                        Slot = idxT
+                        Slot = idxT;
                         if(idxT > CntStart)
-                            Link2Link = ltlcount/(idxT-CntStart)/Mnum
+                            Link2Link = ltlcount/(idxT-CntStart)/Mnum;
                             iLink2Link= iLinkCount/(idxT-CntStart);
-                            AvgLink2Link = mean(iLink2Link)
-                            End2End = etecount/(idxT-CntStart)/Mnum
+                            AvgLink2Link = mean(iLink2Link);
+                            End2End = etecount/(idxT-CntStart)/Mnum;
+                            attempt_rate = Attempt_tot/(idxT-CntStart);
+                            iattempt_rate = iAttempts_tot/(idxT-CntStart);
+                            AvgAttempt_rate = mean(iattempt_rate);
                         end
-                        attempt_rate = Attempt_tot/idxT;
-                        iattempt_rate = iAttempts_tot/idxT;
-                        AvgAttempt_rate = mean(iattempt_rate)
+
 
                         for SrcNode = 1:Mnum
                             %%%%%%%% First Process the Node State %%%%%%%%%%%%%%%%%
@@ -573,6 +574,9 @@
              S = ['save ',datestring,'\','Theta-',num2str(Theta),'\',num2str(idxNT),'.mat'];
              eval(S)
      end
+     close all
+     plotavg(datestring,Theta);
+     saveas(gcf,[datestring,'\','Theta-',num2str(Theta),'\avg.fig']);    
  end
  t2=clock;
  Sim_time = etime(t2,t1)
