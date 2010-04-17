@@ -12,7 +12,7 @@ figure1 = figure;
 axes1 = axes('Parent',figure1,'XScale','log','XMinorTick','on');
 % Uncomment the following line to preserve the X-limits of the axes
 title(axes1,['Theta = ', Theta]);
-xlim(axes1,[0.001 1]);
+%xlim(axes1,[0.001 1]);
 box(axes1,'on');
 hold(axes1,'all');
 
@@ -49,6 +49,8 @@ fitResults1 = polyfit(xdata1, ydata1, 3);
 % Evaluate polynomial
 yplot1 = polyval(fitResults1, xplot1);
 yplot1 = yplot1.*(yplot1 > 0);
+
+xlim(axes1,[0.001 1]);
 % Plot the fit
 fitLine1 = plot(xplot1,yplot1,'DisplayName','cubic','Parent',axes1,...
     'Tag','cubic',...
