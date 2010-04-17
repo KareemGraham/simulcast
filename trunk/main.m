@@ -24,7 +24,7 @@
  Mnum   = 10;       % Number of nodes on network
  Xmax   = 5000;      % X dimension of area in meters
  Ymax   = 5000;      % Y dimension of area in meters
- Sig    = 0;        % STD distribution of nodes in the area
+ Sig    = 100;        % STD distribution of nodes in the area
 
   Attempt_tot = 0;
   iAttempts_tot = zeros(1,Mnum);
@@ -153,13 +153,16 @@
  
  BoffNodes = zeros(Mnum,1);
  
- NumTopo = 1; % Number of topologies for each Theta
+ NumTopo = 5; % Number of topologies for each Theta
  
  datestring = datestr(now,'dd-mm-yyyy-HHMMSS');
  % Start Topology Simulation
  for Theta = [0:5:45 19.25]
-     close all
      for idxNT = 1:NumTopo
+        close all
+         AvgLink2LinkT = zeros(Ns,1);
+         AvgAttempt_rateT = zeros(Ns,1);
+         End2EndT = zeros(Ns,1);
         [nodeXY, Links, Mh] = topo(Mnum, Xmax, Ymax, Sig, Theta, dF);
         S = ['mkdir ',datestring,'\','Theta-',num2str(Theta)];
         eval(S);
@@ -560,6 +563,7 @@
          % Performance Graph code goes here
          AvgLink2LinkT(idxS) = AvgLink2Link;
          AvgAttempt_rateT(idxS) = AvgAttempt_rate;
+         End2EndT(idxS) = End2End;
      end % for idxS = 1:Ns
         XY = sortrows([AvgAttempt_rateT' AvgLink2LinkT'])';
         X = XY(1,:); Y = XY(2,:);
