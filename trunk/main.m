@@ -565,7 +565,7 @@
                      AvgAttempt_rateT(idxS) = AvgAttempt_rate;
                      End2EndT(idxS) = End2End;
               end % for idxS = 1:Ns
-             XY = sortrows([AvgAttempt_rateT' AvgLink2LinkT'])';
+             XY = sortrows([AvgAttempt_rateT AvgLink2LinkT])';
              X = XY(1,:); Y = XY(2,:);
              semilogx(X,Y,'kx')
              saveas(gcf,[datestring,'\','Theta-',num2str(Theta),'\',num2str(idxNT) '.fig']);
