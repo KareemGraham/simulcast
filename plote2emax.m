@@ -8,6 +8,12 @@ i = 0;
     end
     close all;
     theta=[0:5:15 19.25 20:5:45];
-plot(theta,y)
+plot(theta,y,'k-*')
+% Create xlabel
+xlabel('Offset Angle \theta (degrees)','FontSize',8);
+
+% Create ylabel
+ylabel('Maximum Average End-to-End Throughput','FontSize',8);
+
 end
 

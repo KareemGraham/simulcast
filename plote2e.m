@@ -30,6 +30,6 @@ eval(S);
 %S = ['X = X',num2str(x),';'];
 eval(S);
 %S = ['Y = End2EndT',num2str(x),';'];
-Y = mean(maxy);
+Y = maxy(x);
 %eval(S);
 end
