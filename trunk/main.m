@@ -153,7 +153,7 @@
  
  BoffNodes = zeros(Mnum,1);
  
- NumTopo = 5; % Number of topologies for each Theta
+ NumTopo = 15; % Number of topologies for each Theta
  
  datestring = datestr(now,'dd-mm-yyyy-HHMMSS');
  % Start Topology Simulation
@@ -233,7 +233,12 @@
                             if NumPkts == 0
                                 continue; % If new arrival pkts = 0, go to next node
                             end
-                            nHops = randi([1,Nodes(SrcNode).Mhops],1,NumPkts);
+                            %uniform distribution in hops
+                            %nHops = randi([1,Nodes(SrcNode).Mhops],1,NumPkts);
+                            %geometric distribution in hops
+                            nHops = geornd((pi*Dmax^2)/(Xmax*Ymax),1,NumPkts);
+                            nHops(nHops < 1) = 1;
+                            nHops(nHops > Nodes(SrcNode).Mhops) = Nodes(SrcNode).Mhops;
                             for i = 1:NumPkts
                                 PossDes = nodes_with_n_hops(Links, SrcNode, nHops(i));
                                 TempPkt.Des = PossDes(randi(length(PossDes)));

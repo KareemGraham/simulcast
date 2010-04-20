@@ -1,4 +1,4 @@
-function [ ] = plotmax( root_dir, Theta )
+function [ Y ] = plotmax( root_dir, Theta )
 %PLOTAVG Summary of this function goes here
 %   Detailed explanation goes here
 x=1;
@@ -26,5 +26,6 @@ for y=1:x
 end
 x = find(maxy == max(maxy));
 S = ['createfigure(X',num2str(x),',Y',num2str(x),',Theta)'];
-eval(S)
+%eval(S)
+Y = mean(maxy);
 end

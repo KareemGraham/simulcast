@@ -38,15 +38,15 @@ Rm=Rm./N;
 figure
 plot(theta,Rma)
     title('More capable node Ratio v. \theta (Theoretical)');
-    xlabel('Morecapable node Ratio');
-    xlabel('Offset Angle \theta');
+    ylabel('More capable node Ratio');
+    xlabel('Offset Angle \theta (degrees)');
 figure
 plot(theta,Ndeg)
     title('Network Degree v. \theta');
-    xlabel('Offset Angle \theta');
+    xlabel('Offset Angle \theta (degrees)');
     ylabel('Network Degree');
 figure
 plot(theta,Rm)
     title('More capable node Ratio v. \theta');
-    xlabel('Morecapable node Ratio');
-    xlabel('Offset Angle \theta');
+    ylabel('More capable node Ratio');
+    xlabel('Offset Angle \theta (degrees)');
