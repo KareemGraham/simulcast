@@ -158,14 +158,15 @@
  datestring = datestr(now,'dd-mm-yyyy-HHMMSS');
  % Start Topology Simulation
  for Theta = [0:5:45 19.25]
+             S = ['mkdir ',datestring,'\','Theta-',num2str(Theta)];
+             eval(S);
      for idxNT = 1:NumTopo
              close all
              AvgLink2LinkT = zeros(Ns,1);
              AvgAttempt_rateT = zeros(Ns,1);
              End2EndT = zeros(Ns,1);
              [nodeXY, Links, Mh] = topo(Mnum, Xmax, Ymax, Sig, Theta, dF);
-             S = ['mkdir ',datestring,'\','Theta-',num2str(Theta)];
-             eval(S);
+
              for idxS = 1:Ns,
                      Pr = Prs(idxS);
                      R = Pr;
